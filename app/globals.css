@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import "../src/styles/typography.css";
+@import "./styles/typography.css";
 
 :root {
   /* Design Token Colors */
