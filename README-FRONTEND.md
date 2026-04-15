@@ -5,26 +5,28 @@ A scalable, modular Next.js frontend for the AI-enabled healthcare appointment a
 ## Architecture Overview
 
 ```
-src/
+app/
 ├── components/          # UI components organized by service
-│   ├── common/         # Shared UI components (Button, Card, Input, Badge, Logo, Icon)
+│   ├── common/         # Shared components (Logo, Icon)
+│   ├── ui/             # shadcn/ui components (Button, Card, Input, Badge)
+│   ├── brand/          # Brand visuals
+│   ├── layout/         # Shared layout sections
 │   ├── patient/        # Patient service components
 │   ├── doctor/         # Doctor service components
 │   ├── appointment/    # Appointment service components
 │   ├── telemedicine/   # Video consultation components
 │   ├── payment/        # Payment service components
 │   └── ai-symptom/     # AI symptom checker components
-├── styles/             # Global and shared stylesheets
-│   └── typography.css  # Semantic typography classes
-├── lib/
-│   ├── api.ts          # Microservice endpoints
-│   └── constants.ts    # Application constants
-├── utils/
-│   └── helpers.ts      # Utility functions
-├── hooks/              # Custom React hooks
-└── public/assets/      # Logo and icon assets
-    ├── logo/
-    └── icons/
+├── styles/             # Shared stylesheets
+├── lib/                # API endpoints, constants, helpers
+├── hooks/              # Custom hooks
+├── login/              # Login page route
+├── role-selection/     # Role selection route
+└── sign-up/            # Sign-up route
+
+public/assets/
+├── logo/logo.svg
+└── images/auth/doctor-tablet.svg
 ```
 
 ## Design System
@@ -73,7 +75,7 @@ All core UI components are built with **shadcn/ui**, a collection of accessible,
 ### Button
 
 ```tsx
-import { Button } from "@/components/common";
+import { Button } from "@/components/ui/button";
 
 <Button variant="default">Primary</Button>
 <Button variant="secondary">Secondary</Button>
@@ -91,7 +93,7 @@ import { Button } from "@/components/common";
 ### Card
 
 ```tsx
-import { Card, CardHeader, CardContent, CardDescription, CardFooter, CardTitle } from "@/components/common";
+import { Card, CardHeader, CardContent, CardDescription, CardFooter, CardTitle } from "@/components/ui/card";
 
 <Card>
   <CardHeader>
@@ -110,7 +112,7 @@ import { Card, CardHeader, CardContent, CardDescription, CardFooter, CardTitle }
 ### Input
 
 ```tsx
-import { Input } from "@/components/common";
+import { Input } from "@/components/ui/input";
 
 <Input placeholder="Enter email" />
 <Input type="password" placeholder="Password" />
@@ -122,7 +124,7 @@ Add labels and error handling with your own wrapper component.
 ### Badge
 
 ```tsx
-import { Badge } from "@/components/common";
+import { Badge } from "@/components/ui/badge";
 
 <Badge>Default</Badge>
 <Badge variant="secondary">Secondary</Badge>
@@ -147,7 +149,9 @@ import { Logo, Icon } from "@/components/common";
 <Icon name="CreditCard" size={24} className="text-primary" />
 ```
 
-**Logo** – Custom component, add your logo to `public/assets/logo/logo.svg` as shown in `ASSETS.md`
+**Logo** – Custom components render `public/assets/logo/logo.svg` as documented in `ASSETS.md`
+
+**Signup testimonial image** – Uses `public/assets/images/auth/doctor-tablet.svg` in `app/sign-up/page.tsx`
 
 **Icons** – Powered by [lucide-react](https://lucide.dev), a comprehensive icon library. Use any icon name from the lucide catalog. Icons inherit Tailwind classes for styling and sizing.
 
@@ -155,37 +159,37 @@ import { Logo, Icon } from "@/components/common";
 
 Each microservice gets its own component folder:
 
-### Patient Service (`src/components/patient/`)
+### Patient Service (`app/components/patient/`)
 - Patient profile management
 - Medical history display
 - Report uploads
 - Prescription viewing
 
-### Doctor Service (`src/components/doctor/`)
+### Doctor Service (`app/components/doctor/`)
 - Doctor profile setup
 - Availability scheduling
 - Patient consultation history
 - Digital prescriptions
 
-### Appointment Service (`src/components/appointment/`)
+### Appointment Service (`app/components/appointment/`)
 - Doctor search and filtering
 - Appointment booking
 - Booking management (reschedule, cancel)
 - Status tracking
 
-### Telemedicine Service (`src/components/telemedicine/`)
+### Telemedicine Service (`app/components/telemedicine/`)
 - Video consultation interface
 - Session controls
 - Call recording state
 - Chat/messaging (if integrated)
 
-### Payment Service (`src/components/payment/`)
+### Payment Service (`app/components/payment/`)
 - Payment form
 - Payment status display
 - Transaction history
 - Refund status
 
-### AI Symptom Checker (`src/components/ai-symptom/`)
+### AI Symptom Checker (`app/components/ai-symptom/`)
 - Symptom input form
 - Preliminary health suggestions
 - Recommended specialties
@@ -193,7 +197,7 @@ Each microservice gets its own component folder:
 
 ## API Integration
 
-Microservice endpoints are centralized in `src/lib/api.ts`:
+Microservice endpoints are centralized in `app/lib/api.ts`:
 
 ```tsx
 import { API_ENDPOINTS } from "@/lib/api";
@@ -221,10 +225,11 @@ NEXT_PUBLIC_API_URL=http://localhost:3001
    npm install
    ```
 
-2. **Add your logo:**
-   - Place logo file at: `public/assets/logo/logo.svg`
-   - See `ASSETS.md` for details
-   - Icons are provided by lucide-react (no action needed)
+2. **Add or replace assets:**
+  - Logo file: `public/assets/logo/logo.svg`
+  - Signup image: `public/assets/images/auth/doctor-tablet.svg`
+  - See `ASSETS.md` for details
+  - Icons are provided by lucide-react (no action needed)
 
 3. **Run development server:**
    ```bash
@@ -286,17 +291,17 @@ CMD ["npm", "start"]
 
 ## Team Collaboration
 
-- **Design tokens & typography:** Centralized in `globals.css` and `typography.css`
-- **Shared components:** In `src/components/common/`
+- **Design tokens & typography:** Centralized in `app/globals.css` and `app/styles/typography.css`
+- **Shared components:** In `app/components/common/` and `app/components/ui/`
 - **Service-specific components:** Isolated in service folders
-- **API endpoints:** Centralized in `src/lib/api.ts`
-- **Constants:** Centralized in `src/lib/constants.ts`
+- **API endpoints:** Centralized in `app/lib/api.ts`
+- **Constants:** Centralized in `app/lib/constants.ts`
 
 When integrating fetch requests, add them to the appropriate service folder component and use the pre-configured endpoints and constants.
 
 ## Next Steps
 
-1. Add logo and icons to `public/assets/`
+1. Add logo and auth image assets to `public/assets/`
 2. Implement authentication flow component
 3. Build patient landing page
 4. Integrate doctor listing and search

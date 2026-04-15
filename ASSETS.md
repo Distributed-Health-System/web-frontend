@@ -2,82 +2,72 @@
 
 ## Asset Organization
 
-Logo and other static assets are placed in the `public/assets/` directory.
+Static assets are stored under `public/assets/`.
 
-## Logo
+Current project asset paths:
 
-**Location:** `public/assets/logo/`
+- `public/assets/logo/logo.svg` (brand logo)
+- `public/assets/images/auth/doctor-tablet.svg` (signup testimonial background)
 
-Add your logo file as:
-- **`logo.svg`** – Primary logo (recommended SVG format for scalability)
+## Logo Asset
 
-The `Logo` component in `src/components/common/Logo.tsx` will automatically import from this location.
+Place your primary brand logo at `public/assets/logo/logo.svg`.
 
-**Usage:**
-```tsx
-import { Logo } from "@/components/common";
+This file is used by:
 
-export function Header() {
-  return <Logo width={40} height={40} />;
-}
-```
+- `app/components/common/Logo.tsx`
+- `app/components/brand/distributed-health-logo.tsx`
+
+Both components now render the same logo file, so updating this one asset updates brand visuals across auth pages.
+
+## Auth Image Asset
+
+The signup testimonial card uses:
+
+- `public/assets/images/auth/doctor-tablet.svg`
+
+Referenced in:
+
+- `app/sign-up/page.tsx`
+
+If you replace this file, keep the same file name to avoid code changes.
 
 ## Icons
 
-**Icons are provided by lucide-react** – a comprehensive icon library with 1000+ professionally designed icons.
+Icons are provided by `lucide-react` through the shared icon wrapper:
 
-The `Icon` component wraps lucide-react icons for easy usage.
+- `app/components/common/Icon.tsx`
 
-**Usage:**
-```tsx
-import { Icon } from "@/components/common";
+Popular icon names used in this project include:
 
-export function AppointmentCard() {
-  return (
-    <div>
-      <Icon name="Calendar" size={32} />
-      <p>Your Appointment</p>
-    </div>
-  );
-}
-```
+- `Calendar`
+- `User`
+- `Users`
+- `Clock`
+- `MapPin`
+- `Phone`
+- `Mail`
+- `Lock`
+- `Heart`
+- `Pill`
+- `FileText`
+- `Video`
+- `CreditCard`
+- `CheckCircle`
+- `AlertCircle`
+- `Trash2`
+- `Edit`
+- `Download`
+- `Upload`
+- `Search`
+- `Menu`
+- `X`
+- `ChevronRight`
+- `Star`
 
-### Popular Icons for Healthcare Platform
+See https://lucide.dev for the full icon catalog.
 
-- `Calendar` – Appointments
-- `User` – Profile
-- `Users` – Doctor/Team
-- `Clock` – Time/Duration
-- `MapPin` – Location
-- `Phone` – Contact
-- `Mail` – Email
-- `Lock` – Security
-- `Heart` – Health
-- `Pill` – Medicine
-- `FileText` – Reports/Prescriptions
-- `Video` – Video consultation
-- `CreditCard` – Payment
-- `CheckCircle` – Confirmed
-- `AlertCircle` – Alert/Warning
-- `Trash2` – Delete
-- `Edit` – Edit
-- `Download` – Download
-- `Upload` – Upload
-- `Search` – Search
-- `Menu` – Hamburger menu
-- `X` – Close
-- `ChevronRight` – Next/Forward
-- `Star` – Rating
+## File Format Notes
 
-See [lucide-react documentation](https://lucide.dev) for the full icon catalog. All icons are component-based and inherit styling from Tailwind classes.
-
-## Logo Format Recommendation
-
-- **SVG** – Recommended for logo (scalable, lightweight)
-- **PNG** – For raster logo if needed (use optimize tools)
-
-## Performance Notes
-
-- All icons are inline SVGs from lucide-react (no additional requests)
-- Icons automatically scale and inherit color via Tailwind classes
-- No image optimization needed—all icons are optimized by default
+- SVG is preferred for logos and illustration-style UI assets.
+- Keep logo and auth image files optimized to reduce payload size.
