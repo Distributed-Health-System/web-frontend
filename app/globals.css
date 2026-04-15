@@ -1,26 +1,55 @@
 @import "tailwindcss";
+@import "../src/styles/typography.css";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Design Token Colors */
+  --background: #0b1c30;
+  --foreground: #0b1c300a;
+  --card: #0c4a6e;
+  --card-foreground: #0b1c300a;
+  --primary: #c7deffb8;
+  --primary-foreground: #0b1c30;
+  --secondary: #0b1c30eb;
+  --secondary-foreground: #0b1c300a;
+  --muted: #0b1c30eb;
+  --muted-foreground: #0b1c3066;
+  --accent: #004a6d;
+  --accent-foreground: #ffffff;
+  --destructive: #93000a;
+  --destructive-foreground: #ffdad6;
+  --border: #0b1c303d;
+  --input: #0b1c303d;
+  --ring: #c7deffb8;
+  --success: #002204;
+  --success-foreground: #94f990;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
 }

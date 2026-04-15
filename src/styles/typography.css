@@ -1,0 +1,59 @@
+/* Typography System */
+
+/* Headings */
+.h1 {
+  @apply text-4xl font-bold leading-tight tracking-tight;
+}
+
+.h2 {
+  @apply text-3xl font-semibold leading-snug tracking-tight;
+}
+
+.h3 {
+  @apply text-2xl font-semibold leading-snug;
+}
+
+.h4 {
+  @apply text-xl font-semibold leading-normal;
+}
+
+/* Body Text */
+.body-lg {
+  @apply text-base font-normal leading-relaxed;
+}
+
+.body-base {
+  @apply text-sm font-normal leading-normal;
+}
+
+.body-sm {
+  @apply text-xs font-medium leading-tight;
+}
+
+/* Labels and UI Text */
+.label {
+  @apply text-sm font-medium leading-normal;
+}
+
+.label-sm {
+  @apply text-xs font-medium leading-tight;
+}
+
+/* Helper Text */
+.helper-text {
+  @apply text-xs font-normal leading-tight text-muted-foreground;
+}
+
+/* Links */
+.link {
+  @apply text-base font-medium underline transition-colors hover:no-underline;
+}
+
+.link-sm {
+  @apply text-sm font-medium underline transition-colors hover:no-underline;
+}
+
+/* Emphasis */
+.text-emphasis {
+  @apply font-semibold;
+}
