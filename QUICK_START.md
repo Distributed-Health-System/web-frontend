@@ -4,24 +4,26 @@
 
 ```
 public/assets/
-  ├── logo/             → Your company logo
-  └── icons/            → All UI icons
+  ├── logo/logo.svg                → Brand logo
+  └── images/auth/doctor-tablet.svg → Signup testimonial background
 
-src/
+app/
   ├── components/
-  │   ├── common/       → Shared UI building blocks
+  │   ├── common/       → Shared components (Logo, Icon)
+  │   ├── ui/           → shadcn/ui wrappers
+  │   ├── brand/        → Brand-specific visual components
+  │   ├── layout/       → Shared layout components
   │   ├── patient/      → Patient service features
   │   ├── doctor/       → Doctor service features
-  │   ├── appointment/  → Appointment booking & management
-  │   ├── telemedicine/ → Video consultations
-  │   ├── payment/      → Payment processing
-  │   └── ai-symptom/   → AI features
-  ├── lib/
-  │   ├── api.ts        → Backend endpoints
-  │   └── constants.ts  → App-wide constants
-  ├── utils/
-  │   └── helpers.ts    → Utility functions
-  └── hooks/            → Custom React hooks
+  │   ├── appointment/  → Appointment booking and management
+  │   ├── telemedicine/ → Video consultation features
+  │   ├── payment/      → Payment features
+  │   └── ai-symptom/   → AI symptom checker features
+  ├── lib/              → API, constants, helpers
+  ├── hooks/            → Custom hooks
+  ├── login/            → Login page route
+  ├── role-selection/   → Role selection page route
+  └── sign-up/          → Sign-up page route
 ```
 
 ## Typography Classes (Don't use inline Tailwind for text)
@@ -42,7 +44,7 @@ All UI components use **shadcn/ui**—fully styled, accessible React components.
 
 ### Button
 ```tsx
-import { Button } from "@/components/common";
+import { Button } from "@/components/ui/button";
 
 <Button variant="default">Primary</Button>
 <Button variant="secondary">Secondary</Button>
@@ -55,7 +57,7 @@ import { Button } from "@/components/common";
 
 ### Card
 ```tsx
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/common";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 
 <Card>
   <CardHeader>
@@ -68,7 +70,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/componen
 
 ### Input
 ```tsx
-import { Input } from "@/components/common";
+import { Input } from "@/components/ui/input";
 
 <Input placeholder="Enter text" />
 <Input type="email" placeholder="user@example.com" />
@@ -77,7 +79,7 @@ import { Input } from "@/components/common";
 
 ### Badge
 ```tsx
-import { Badge } from "@/components/common";
+import { Badge } from "@/components/ui/badge";
 
 <Badge>Default</Badge>
 <Badge variant="secondary">Secondary</Badge>
@@ -133,7 +135,7 @@ npx shadcn@latest add spinner
 npx shadcn@latest add sonner
 ```
 
-Then import from `@/components/ui/` and re-export via `@/components/common/index.ts` if you want them in the common barrel export.
+Then import from `@/components/ui/` and re-export via `app/components/common/index.ts` if you want them in the common barrel export.
 
 ## API Calls
 
@@ -170,7 +172,7 @@ if (status === APPOINTMENT_STATUS.CONFIRMED) {
 ## Utilities
 
 ```tsx
-import { cn, formatDate, formatTime, formatDateTime } from "@/utils/helpers";
+import { cn, formatDate, formatTime, formatDateTime } from "@/lib/helpers";
 
 // Combine class names conditionally
 className={cn("base-class", isActive && "active-class")}
@@ -185,7 +187,7 @@ formatDateTime(new Date())    // "April 15, 2026 at 10:30 AM"
 
 1. **Create file** in the appropriate service folder:
    ```
-   src/components/patient/PatientProfile.tsx
+  app/components/patient/PatientProfile.tsx
    ```
 
 2. **Implement component:**
@@ -206,7 +208,7 @@ formatDateTime(new Date())    // "April 15, 2026 at 10:30 AM"
 
 3. **Export from index.ts:**
    ```tsx
-   // src/components/patient/index.ts
+  // app/components/patient/index.ts
    export { PatientProfile } from "./PatientProfile";
    ```
 
@@ -222,12 +224,17 @@ formatDateTime(new Date())    // "April 15, 2026 at 10:30 AM"
 ## Adding Assets (Logo Only)
 
 **Logo:**
-1. **Prepare file** as SVG (recommended) or PNG
+1. **Prepare file** as SVG (recommended)
 2. **Place in:** `public/assets/logo/logo.svg`
 3. **Use in components:**
    ```tsx
    <Logo width={48} height={48} />
    ```
+
+**Auth testimonial image:**
+1. **Prepare file** as SVG or optimized image
+2. **Place in:** `public/assets/images/auth/doctor-tablet.svg`
+3. **Used by:** `app/sign-up/page.tsx`
 
 **Icons:**
 Icons use **lucide-react**, so no need to download or add icon files. Just use icon names:
@@ -279,5 +286,5 @@ Available backgrounds: `background`, `card`, `popover`, `primary`, `secondary`, 
 
 - **Architecture:** See `README-FRONTEND.md`
 - **Assets:** See `ASSETS.md`
-- **Component examples:** Check `src/components/common/`
-- **API setup:** Check `src/lib/api.ts`
+- **Component examples:** Check `app/components/common/`
+- **API setup:** Check `app/lib/api.ts`

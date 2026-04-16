@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
+// Root layout config shared by all routes in the app router.
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
