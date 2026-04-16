@@ -22,7 +22,8 @@
   --ring: #0065a1;
   --success: #005614;
   --success-foreground: #ffffff;
-
+  --popover: #ffffff;
+  --popover-foreground: #0b1c30;
 }
 
 .dark {
@@ -46,7 +47,8 @@
   --ring: rgba(199, 222, 255, 0.72);
   --success: #002204;
   --success-foreground: #94f990;
-
+  --popover: #0b1c30;
+  --popover-foreground: #c7deff;
 }
 
 @theme inline {
@@ -69,6 +71,8 @@
   --color-ring: var(--ring);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 

@@ -17,8 +17,8 @@ const doctorNavItems = [
   { title: "Schedule", url: "/doctor/schedule", icon: <CalendarIcon /> },
   { title: "Consultations", url: "/doctor/consultations", icon: <VideoIcon /> },
   { title: "Prescriptions", url: "/doctor/prescriptions", icon: <ClipboardPlusIcon /> },
-  { title: "Earnings", url: "/doctor/earnings", icon: <WalletIcon /> },
-  { title: "Reviews", url: "/doctor/reviews", icon: <StarIcon /> },
+
+
 ]
 
 const doctorUser = {
