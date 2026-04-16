@@ -2,7 +2,7 @@ import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { Slot } from "radix-ui"
 
-import { cn } from "../../../lib/utils"
+import { cn } from "@/lib/utils"
 
 // Shared button variant map used across auth and future feature screens.
 const buttonVariants = cva(
