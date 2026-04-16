@@ -32,7 +32,7 @@
 
 /* Labels and UI Text */
 .label {
-  @apply text-sm font-medium leading-normal;
+  @apply text-sm font-medium leading-normal text-foreground;
 }
 
 .label-sm {

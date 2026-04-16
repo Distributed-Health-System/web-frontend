@@ -2,26 +2,51 @@
 @import "../styles/typography.css";
 
 :root {
-  /* Design Token Colors */
+  /* Light mode — Figma DS tokens */
+  --background: #ffffff;
+  --foreground: #0b1c30;
+  --card: #ffffff;
+  --card-foreground: #0b1c30;
+  --primary: #0065a1;
+  --primary-foreground: #ffffff;
+  --secondary: #e9f2ff;
+  --secondary-foreground: #004c7b;
+  --muted: rgba(11, 28, 48, 0.08);
+  --muted-foreground: rgba(11, 28, 48, 0.56);
+  --accent: rgba(199, 222, 255, 0.48);
+  --accent-foreground: #004c7b;
+  --destructive: #ba1a1a;
+  --destructive-foreground: #ffffff;
+  --border: rgba(97, 97, 97, 0.12);
+  --input: rgba(11, 28, 48, 0.12);
+  --ring: #0065a1;
+  --success: #005614;
+  --success-foreground: #ffffff;
+
+}
+
+.dark {
+  /* Dark mode — Figma DS tokens */
   --background: #0b1c30;
-  --foreground: #0b1c300a;
-  --card: #0c4a6e;
-  --card-foreground: #0b1c300a;
-  --primary: #c7deffb8;
+  --foreground: #c7deff;
+  --card: #004c7b;
+  --card-foreground: #c7deff;
+  --primary: rgba(199, 222, 255, 0.72);
   --primary-foreground: #0b1c30;
-  --secondary: #0b1c30eb;
-  --secondary-foreground: #0b1c300a;
-  --muted: #0b1c30eb;
-  --muted-foreground: #0b1c3066;
+  --secondary: #0c4a6e;
+  --secondary-foreground: #c7deff;
+  --muted: #0c4a6e;
+  --muted-foreground: rgba(199, 222, 255, 0.4);
   --accent: #004a6d;
   --accent-foreground: #ffffff;
   --destructive: #93000a;
   --destructive-foreground: #ffdad6;
-  --border: #0b1c303d;
-  --input: #0b1c303d;
-  --ring: #c7deffb8;
+  --border: rgba(11, 28, 48, 0.24);
+  --input: rgba(11, 28, 48, 0.24);
+  --ring: rgba(199, 222, 255, 0.72);
   --success: #002204;
   --success-foreground: #94f990;
+
 }
 
 @theme inline {
@@ -46,6 +71,9 @@
   --color-success-foreground: var(--success-foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+
+
 }
 
 body {
