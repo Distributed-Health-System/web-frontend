@@ -1,6 +1,6 @@
 import * as React from "react"
 
-import { cn } from "../../../lib/utils"
+import { cn } from "@/lib/utils"
 
 // Base input styles with built-in invalid and focus-visible states.
 function Input({ className, type, ...props }: React.ComponentProps<"input">) {
