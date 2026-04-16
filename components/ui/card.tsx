@@ -1,6 +1,6 @@
 import * as React from "react"
 
-import { cn } from "@/lib/utils"
+import { cn } from "../../../lib/utils"
 
 // Card primitives keep content sections consistent across feature modules.
 function Card({
