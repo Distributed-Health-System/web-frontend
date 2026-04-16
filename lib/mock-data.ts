@@ -6,7 +6,7 @@ export const doctors: Doctor[] = [
     name: "Dr. Sarah Mitchell",
     specialty: "General Practitioner",
     avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=face",
-    bio: "15 years of experience in family medicine.",
+    bio: "15 years of experience in family medicine and preventive care for all ages.",
     availableSlots: ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00"],
   },
   {
@@ -14,7 +14,7 @@ export const doctors: Doctor[] = [
     name: "Dr. James Chen",
     specialty: "Cardiologist",
     avatar: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=150&h=150&fit=crop&crop=face",
-    bio: "Board-certified cardiologist.",
+    bio: "Board-certified cardiologist focused on heart failure, hypertension, and preventive cardiology.",
     availableSlots: ["08:00", "09:00", "10:00", "13:00", "14:00"],
   },
   {
@@ -22,10 +22,56 @@ export const doctors: Doctor[] = [
     name: "Dr. Emily Rodriguez",
     specialty: "Dermatologist",
     avatar: "https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=150&h=150&fit=crop&crop=face",
-    bio: "Specialises in skin conditions and teledermatology.",
+    bio: "Specialises in skin conditions, acne, and teledermatology consultations.",
     availableSlots: ["10:00", "11:00", "12:00", "15:00", "16:00", "17:00"],
   },
+  {
+    id: "dr-4",
+    name: "Dr. Aisha Okonkwo",
+    specialty: "Pediatrician",
+    avatar: "https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=150&h=150&fit=crop&crop=face",
+    bio: "Child and adolescent health, developmental checks, and immunisation guidance.",
+    availableSlots: ["08:30", "09:30", "14:00", "15:30"],
+  },
+  {
+    id: "dr-5",
+    name: "Dr. Robert Lindqvist",
+    specialty: "Neurologist",
+    avatar: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&h=150&fit=crop&crop=face",
+    bio: "Headaches, migraine, epilepsy, and neurodegenerative conditions.",
+    availableSlots: ["09:00", "11:00", "13:00", "16:00"],
+  },
+  {
+    id: "dr-6",
+    name: "Dr. Priya Nair",
+    specialty: "Orthopedics",
+    avatar: "https://images.unsplash.com/photo-1651008376812-bbe2f4478bdb?w=150&h=150&fit=crop&crop=face",
+    bio: "Sports injuries, joint pain, and post-surgical rehabilitation planning.",
+    availableSlots: ["07:30", "10:30", "12:00", "15:00"],
+  },
+  {
+    id: "dr-7",
+    name: "Dr. Daniel Foster",
+    specialty: "Psychiatry",
+    avatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&h=150&fit=crop&crop=face",
+    bio: "Adult psychiatry, anxiety, depression, and medication management via telehealth.",
+    availableSlots: ["09:00", "10:00", "13:00", "14:00", "17:00"],
+  },
+  {
+    id: "dr-8",
+    name: "Dr. Maria Santos",
+    specialty: "General Practitioner",
+    avatar: "https://images.unsplash.com/photo-1527613426441-4da17449b3d7?w=150&h=150&fit=crop&crop=face",
+    bio: "Same-day appointments for acute issues and ongoing chronic disease care.",
+    availableSlots: ["08:00", "09:00", "11:00", "15:00", "16:30"],
+  },
 ]
+
+/** Distinct specialties for directory filters (sorted). */
+export function getDoctorSpecialties(): string[] {
+  const set = new Set(doctors.map((d) => d.specialty))
+  return Array.from(set).sort((a, b) => a.localeCompare(b))
+}
 
 export const patients: Patient[] = [
   {
