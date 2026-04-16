@@ -3,6 +3,7 @@ import { SiteHeader } from "@/components/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import {
   LayoutDashboardIcon,
+  SparklesIcon,
   StethoscopeIcon,
   CalendarIcon,
   FlaskConicalIcon,
@@ -12,6 +13,7 @@ import {
 
 const patientNavItems = [
   { title: "Dashboard", url: "/patient/dashboard", icon: <LayoutDashboardIcon /> },
+  { title: "Symptom checker", url: "/patient/symptom-checker", icon: <SparklesIcon /> },
   { title: "Find Doctors", url: "/patient/find-doctors", icon: <StethoscopeIcon /> },
   { title: "My Appointments", url: "/patient/appointments", icon: <CalendarIcon /> },
   { title: "Upload Lab Reports", url: "/patient/lab-reports", icon: <FlaskConicalIcon /> },

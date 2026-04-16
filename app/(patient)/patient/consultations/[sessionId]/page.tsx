@@ -19,8 +19,8 @@ const VideoCallRoom = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="h-10 w-10 text-primary animate-spin" />
+      <div className="flex h-full items-center justify-center">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
       </div>
     ),
   }
@@ -32,9 +32,10 @@ const CURRENT_PATIENT = patients[0]
 export default function PatientConsultationPage({
   params,
 }: {
-  params: Promise<{ appointmentId: string }>
+  // sessionId maps to appointment id for demo — real auth will derive this from the session
+  params: Promise<{ sessionId: string }>
 }) {
-  const { appointmentId } = use(params)
+  const { sessionId } = use(params)
   const router = useRouter()
 
   const [appointment, setAppointment] = useState<Appointment | null>(null)
@@ -44,14 +45,14 @@ export default function PatientConsultationPage({
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const apt = getAppointmentById(appointmentId)
+    const apt = getAppointmentById(sessionId)
     if (apt) {
       setAppointment(apt)
       setDoctor(getDoctorById(apt.doctorId))
       setPatient(getPatientById(apt.patientId))
     }
     setIsLoading(false)
-  }, [appointmentId])
+  }, [sessionId])
 
   useEffect(() => {
     if (!appointment) return
@@ -63,16 +64,16 @@ export default function PatientConsultationPage({
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 text-primary animate-spin" />
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     )
   }
 
   if (!appointment) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted-foreground">Appointment not found.</p>
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-muted-foreground">Session not found.</p>
       </div>
     )
   }
@@ -90,7 +91,7 @@ export default function PatientConsultationPage({
   }
 
   return (
-    <div className="h-screen w-screen bg-black overflow-hidden">
+    <div className="h-screen w-screen overflow-hidden bg-black">
       <VideoCallRoom
         appointment={appointment}
         doctor={doctor}

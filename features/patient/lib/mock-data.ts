@@ -1,0 +1,175 @@
+import type {
+  PatientAppointment,
+  PatientInvoice,
+  PatientLabReport,
+  PatientPrescription,
+} from "../types"
+
+export const mockPatientAppointments: PatientAppointment[] = [
+  {
+    id: "apt-1",
+    doctorName: "Dr. Sarah Jenkins",
+    specialty: "Cardiology",
+    date: "2026-04-17",
+    timeSlot: "11:30 AM",
+    type: "video",
+    status: "upcoming",
+    sessionId: "apt-1",
+  },
+  {
+    id: "apt-2",
+    doctorName: "Dr. Michael Chen",
+    specialty: "General Practice",
+    date: "2026-04-20",
+    timeSlot: "09:00 AM",
+    type: "video",
+    status: "upcoming",
+    sessionId: "apt-2",
+  },
+  {
+    id: "apt-3",
+    doctorName: "Dr. Emily Rodriguez",
+    specialty: "Dermatology",
+    date: "2026-04-12",
+    timeSlot: "02:00 PM",
+    type: "video",
+    status: "completed",
+    sessionId: "apt-3",
+  },
+  {
+    id: "apt-4",
+    doctorName: "Dr. Aisha Okonkwo",
+    specialty: "Pediatrics",
+    date: "2026-04-08",
+    timeSlot: "10:30 AM",
+    type: "video",
+    status: "cancelled",
+  },
+]
+
+export const mockPatientLabReports: PatientLabReport[] = [
+  {
+    id: "lab-1",
+    title: "Complete blood count",
+    uploadedAt: "2026-04-01T10:00:00.000Z",
+    category: "lab",
+    status: "reviewed",
+    fileName: "CBC_results.pdf",
+    mimeType: "application/pdf",
+    fileSizeBytes: 245_760,
+  },
+  {
+    id: "lab-2",
+    title: "Chest X-ray",
+    uploadedAt: "2026-03-20T14:30:00.000Z",
+    category: "scan",
+    status: "pending",
+    fileName: "chest_xray.jpg",
+    mimeType: "image/jpeg",
+    fileSizeBytes: 512_000,
+  },
+]
+
+export const mockPatientInvoices: PatientInvoice[] = [
+  {
+    id: "inv-1001",
+    description: "Video consultation — follow-up cardiology",
+    providerName: "Dr. Sarah Jenkins",
+    serviceDate: "2026-04-10",
+    issuedAt: "2026-04-10T15:00:00.000Z",
+    amountCents: 125_00,
+    currency: "USD",
+    status: "paid",
+    last4: "4242",
+    paidAt: "2026-04-10T15:04:12.000Z",
+  },
+  {
+    id: "inv-1002",
+    description: "Video consultation — general practice",
+    providerName: "Dr. Michael Chen",
+    serviceDate: "2026-04-18",
+    issuedAt: "2026-04-18T09:15:00.000Z",
+    amountCents: 99_00,
+    currency: "USD",
+    status: "due",
+  },
+  {
+    id: "inv-1003",
+    description: "Video consultation — dermatology",
+    providerName: "Dr. Emily Rodriguez",
+    serviceDate: "2026-04-16",
+    issuedAt: "2026-04-16T11:00:00.000Z",
+    amountCents: 110_00,
+    currency: "USD",
+    status: "processing",
+  },
+  {
+    id: "inv-1004",
+    description: "Video consultation — cancelled visit fee waived",
+    providerName: "Dr. Aisha Okonkwo",
+    serviceDate: "2026-03-28",
+    issuedAt: "2026-03-28T16:00:00.000Z",
+    amountCents: 85_00,
+    currency: "USD",
+    status: "refunded",
+    paidAt: "2026-03-29T10:00:00.000Z",
+  },
+]
+
+export const mockPatientPrescriptions: PatientPrescription[] = [
+  {
+    id: "rx-1",
+    issuedAt: "2026-04-01T14:00:00.000Z",
+    prescriberName: "Dr. Sarah Jenkins",
+    specialty: "Cardiology",
+    status: "active",
+    notes: "Take with food. Follow up in 4 weeks.",
+    medications: [
+      {
+        name: "Lisinopril",
+        dosage: "10 mg",
+        frequency: "Once daily",
+        duration: "90 days",
+        instructions: "Morning, same time each day",
+      },
+      {
+        name: "Atorvastatin",
+        dosage: "20 mg",
+        frequency: "Once daily at bedtime",
+        duration: "90 days",
+      },
+    ],
+  },
+  {
+    id: "rx-2",
+    issuedAt: "2026-03-15T10:30:00.000Z",
+    prescriberName: "Dr. Michael Chen",
+    specialty: "General Practice",
+    status: "active",
+    medications: [
+      {
+        name: "Amoxicillin",
+        dosage: "500 mg",
+        frequency: "Three times daily",
+        duration: "7 days",
+        instructions: "Complete full course even if you feel better",
+      },
+    ],
+  },
+  {
+    id: "rx-3",
+    issuedAt: "2025-12-01T09:00:00.000Z",
+    prescriberName: "Dr. Emily Rodriguez",
+    specialty: "Dermatology",
+    status: "past",
+    medications: [
+      {
+        name: "Hydrocortisone cream 1%",
+        dosage: "Thin layer",
+        frequency: "Twice daily",
+        duration: "14 days",
+        instructions: "External use only",
+      },
+    ],
+  },
+]

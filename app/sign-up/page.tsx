@@ -1,15 +1,23 @@
 "use client"
 
 import Link from "next/link"
-import { useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
 import {
+  AlertTriangle,
   Brain,
+  BriefcaseMedical,
+  Calendar,
   Eye,
   EyeOff,
+  HeartPulse,
+  IdCard,
   LockKeyhole,
   Mail,
+  MapPin,
+  Phone,
   ShieldCheck,
+  Stethoscope,
   UserRound,
 } from "lucide-react"
 
@@ -21,12 +29,46 @@ import { Input } from "@/components/ui/input"
 
 // Basic email shape validation for client-side checks.
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+// Mirrors patient-service CreatePatientDto phone rules (optional when set).
+const PHONE_PATTERN = /^[+()\-.\s0-9]{7,20}$/
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? ""
+
+const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"] as const
 
 type SignUpErrors = {
-  fullName?: string
+  firstName?: string
+  lastName?: string
   email?: string
   password?: string
   confirmPassword?: string
+  phone?: string
+  dateOfBirth?: string
+  gender?: string
+  specialization?: string
+  licenseNumber?: string
+  yearsOfExperience?: string
+  bio?: string
+  emergencyContactPhone?: string
+}
+
+type LabelWithMarkerProps = {
+  label: string
+  required?: boolean
+}
+
+function LabelWithMarker({ label, required = false }: LabelWithMarkerProps) {
+  return (
+    <span className="label flex items-center justify-between gap-2">
+      <span>{label}</span>
+      {required ? (
+        <span className="label-sm text-destructive" aria-label="Required field">
+          *
+        </span>
+      ) : (
+        <span className="label-sm text-muted-foreground">Optional</span>
+      )}
+    </span>
+  )
 }
 
 // Inline SVG avoids external icon package dependency for brand marks.
@@ -65,6 +107,7 @@ function AppleIcon() {
 }
 
 export default function SignUpPage() {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const roleParam = searchParams.get("role")
   const [selectedRole, setSelectedRole] = useState<"patient" | "doctor">(
@@ -72,20 +115,77 @@ export default function SignUpPage() {
   )
   const [isPasswordVisible, setIsPasswordVisible] = useState(false)
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false)
-  const [fullName, setFullName] = useState("")
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
+  const [phone, setPhone] = useState("")
+  const [dateOfBirth, setDateOfBirth] = useState("")
+  const [gender, setGender] = useState<"" | "male" | "female" | "other">("")
+  const [address, setAddress] = useState("")
+  const [bloodGroup, setBloodGroup] = useState<(typeof BLOOD_GROUPS)[number] | "">("")
+  const [allergies, setAllergies] = useState("")
+  const [medicalHistory, setMedicalHistory] = useState("")
+  const [emergencyContactName, setEmergencyContactName] = useState("")
+  const [emergencyContactPhone, setEmergencyContactPhone] = useState("")
+  const [specialization, setSpecialization] = useState("")
+  const [licenseNumber, setLicenseNumber] = useState("")
+  const [yearsOfExperience, setYearsOfExperience] = useState("")
+  const [bio, setBio] = useState("")
   const [errors, setErrors] = useState<SignUpErrors>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [submitSuccess, setSubmitSuccess] = useState<string | null>(null)
 
   // Keep lightweight client validation close to the form for fast feedback.
   const validate = (): SignUpErrors => {
     const nextErrors: SignUpErrors = {}
 
-    if (!fullName.trim()) {
-      nextErrors.fullName = "Full name is required."
-    } else if (fullName.trim().length < 2) {
-      nextErrors.fullName = "Full name must be at least 2 characters."
+    if (!firstName.trim()) {
+      nextErrors.firstName = "First name is required."
+    }
+    if (!lastName.trim()) {
+      nextErrors.lastName = "Last name is required."
+    }
+
+    if (selectedRole === "patient") {
+      if (!dateOfBirth) {
+        nextErrors.dateOfBirth = "Date of birth is required."
+      } else {
+        const parsed = new Date(dateOfBirth)
+        if (Number.isNaN(parsed.getTime())) {
+          nextErrors.dateOfBirth = "Enter a valid date of birth."
+        } else {
+          const startOfToday = new Date()
+          startOfToday.setHours(0, 0, 0, 0)
+          if (parsed > startOfToday) {
+            nextErrors.dateOfBirth = "Date of birth cannot be in the future."
+          }
+        }
+      }
+      if (!gender) {
+        nextErrors.gender = "Select a gender."
+      }
+      if (phone.trim() && !PHONE_PATTERN.test(phone.trim())) {
+        nextErrors.phone = "Use 7–20 digits/symbols: + ( ) . - spaces."
+      }
+      if (emergencyContactPhone.trim() && !PHONE_PATTERN.test(emergencyContactPhone.trim())) {
+        nextErrors.emergencyContactPhone = "Use 7–20 digits/symbols: + ( ) . - spaces."
+      }
+    } else {
+      if (!specialization.trim()) {
+        nextErrors.specialization = "Specialization is required."
+      }
+      if (!licenseNumber.trim()) {
+        nextErrors.licenseNumber = "License number is required."
+      }
+      if (yearsOfExperience.trim()) {
+        const parsed = Number(yearsOfExperience)
+        if (Number.isNaN(parsed) || parsed < 0) {
+          nextErrors.yearsOfExperience = "Years of experience must be 0 or greater."
+        }
+      }
     }
 
     if (!email.trim()) {
@@ -109,28 +209,91 @@ export default function SignUpPage() {
     return nextErrors
   }
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     // Stop submit until all inputs pass local validation rules.
     const nextErrors = validate()
     setErrors(nextErrors)
+    setSubmitError(null)
+    setSubmitSuccess(null)
 
     if (Object.keys(nextErrors).length > 0) {
       return
     }
+
+    if (selectedRole === "patient") {
+      setSubmitSuccess(
+        "Your patient profile details look good. Backend signup will be connected next—you can sign in once it is available."
+      )
+      return
+    }
+
+    if (!API_BASE_URL) {
+      setSubmitError("Missing NEXT_PUBLIC_API_URL. Add it in .env.local before signing up.")
+      return
+    }
+
+    const doctorPayload: Record<string, string | number> = {
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      email: email.trim(),
+      password,
+      specialization: specialization.trim(),
+      licenseNumber: licenseNumber.trim(),
+    }
+
+    if (phone.trim()) doctorPayload.phone = phone.trim()
+    if (bio.trim()) doctorPayload.bio = bio.trim()
+    if (yearsOfExperience.trim()) doctorPayload.yearsOfExperience = Number(yearsOfExperience)
+
+    try {
+      setIsSubmitting(true)
+      const response = await fetch(`${API_BASE_URL}/doctors`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(doctorPayload),
+      })
+
+      if (!response.ok) {
+        let message = "Doctor signup failed. Please try again."
+        try {
+          const errorBody = await response.json()
+          if (typeof errorBody?.message === "string") {
+            message = errorBody.message
+          } else if (Array.isArray(errorBody?.message)) {
+            message = errorBody.message.join(", ")
+          }
+        } catch {
+          // Keep fallback message if body is not JSON.
+        }
+        setSubmitError(message)
+        return
+      }
+
+      setSubmitSuccess("Doctor account created. Awaiting admin approval. Redirecting to login...")
+      setTimeout(() => {
+        router.push("/login")
+      }, 1200)
+    } catch {
+      setSubmitError("Unable to reach signup service. Check API gateway and try again.")
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-900">
-      <header className="border-b border-slate-200/80 bg-white/80 backdrop-blur-md">
+    <div className="min-h-screen bg-background text-foreground">
+      <header className="border-b border-border bg-card/90 backdrop-blur-md">
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-5">
           <DistributedHealthLogo />
 
-          <div className="flex items-center gap-3 text-sm text-slate-500">
+          <div className="flex items-center gap-3 helper-text">
             <span className="hidden sm:inline">Already have an account?</span>
             <Link
               href="/login"
-              className="rounded-xl bg-sky-100 px-5 py-2.5 font-medium text-sky-700 transition hover:bg-sky-200"
+              className="rounded-xl bg-secondary px-5 py-2.5 label text-secondary-foreground transition hover:bg-secondary/80"
             >
               Sign In
             </Link>
@@ -138,14 +301,14 @@ export default function SignUpPage() {
         </div>
       </header>
 
-      <main className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-10 px-6 py-12 lg:grid-cols-[minmax(420px,1fr)_minmax(420px,560px)] lg:items-center lg:gap-12">
+      <main className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-10 px-6 py-12 lg:grid-cols-[minmax(420px,1fr)_minmax(420px,560px)] lg:items-start lg:gap-12">
         <section className="space-y-8 lg:pr-8">
           <div>
             <Badge className="rounded-full bg-emerald-700 px-4 py-1 text-[11px] tracking-wide text-white hover:bg-emerald-700">
               AI-POWERED PRECISION
             </Badge>
 
-            <h1 className="mt-4 text-5xl font-bold leading-tight tracking-[-1px] text-slate-900">
+            <h1 className="mt-4 h1 text-[2.75rem] text-foreground">
               Your health,
               <span
                 className="block bg-clip-text text-transparent"
@@ -158,21 +321,21 @@ export default function SignUpPage() {
               </span>
             </h1>
 
-            <p className="mt-5 max-w-lg text-slate-600">
+            <p className="mt-5 max-w-lg body-base text-muted-foreground">
               Join the next generation of healthcare. Our AI-enabled platform offers
               instant symptom checking and seamless clinical integration.
             </p>
           </div>
 
           <div className="space-y-4">
-            <article className="rounded-xl bg-white p-6 shadow-[0_12px_32px_-4px_rgba(25,28,30,0.06)]">
+            <article className="rounded-xl border border-border bg-card p-6">
               <div className="flex items-start gap-4">
-                <span className="mt-0.5 rounded-lg bg-sky-50 p-2 text-sky-700">
+                <span className="mt-0.5 rounded-lg bg-secondary p-2 text-primary">
                   <Brain className="h-5 w-5" />
                 </span>
                 <div>
-                  <h2 className="text-lg text-slate-900">AI Symptom Insights</h2>
-                  <p className="mt-1 text-sm leading-6 text-slate-600">
+                  <h2 className="h4 text-foreground">AI Symptom Insights</h2>
+                  <p className="mt-1 body-base leading-6 text-muted-foreground">
                     Get medically-backed preliminary assessments in seconds using our
                     advanced neural diagnostic engine.
                   </p>
@@ -180,14 +343,14 @@ export default function SignUpPage() {
               </div>
             </article>
 
-            <article className="rounded-xl bg-white p-6 shadow-[0_12px_32px_-4px_rgba(25,28,30,0.06)]">
+            <article className="rounded-xl border border-border bg-card p-6">
               <div className="flex items-start gap-4">
-                <span className="mt-0.5 rounded-lg bg-emerald-50 p-2 text-emerald-700">
+                <span className="mt-0.5 rounded-lg bg-secondary p-2 text-success">
                   <ShieldCheck className="h-5 w-5" />
                 </span>
                 <div>
-                  <h2 className="text-lg text-slate-900">Privacy First Architecture</h2>
-                  <p className="mt-1 text-sm leading-6 text-slate-600">
+                  <h2 className="h4 text-foreground">Privacy First Architecture</h2>
+                  <p className="mt-1 body-base leading-6 text-muted-foreground">
                     Your data is encrypted with enterprise-grade security, ensuring complete
                     patient confidentiality.
                   </p>
@@ -197,7 +360,7 @@ export default function SignUpPage() {
           </div>
 
           <div
-            className="relative min-h-64 overflow-hidden rounded-2xl bg-cover bg-center p-8 text-white shadow-[0_12px_32px_-4px_rgba(25,28,30,0.2)]"
+            className="relative min-h-64 overflow-hidden rounded-2xl bg-cover bg-center p-8 text-primary-foreground"
             style={{
               backgroundImage:
                 "linear-gradient(180deg, rgba(0,71,141,0) 20%, rgba(0,71,141,0.7) 100%), url('/assets/images/auth/doctor-tablet.svg')",
@@ -205,27 +368,27 @@ export default function SignUpPage() {
           >
             <div className="absolute inset-0 bg-linear-to-tr from-[#0b1c30]/30 via-[#0065a1]/20 to-[#0b1c30]/40" />
             <div className="relative z-10 flex min-h-48 flex-col justify-end">
-              <p className="max-w-md text-base leading-6 text-white/90">
+              <p className="max-w-md body-lg leading-6 text-primary-foreground/90">
                 &quot;The diagnostic precision has improved our patient outcomes by 40%.&quot;
               </p>
-              <p className="mt-3 text-sm text-white/80">- Dr. Elena Vance, Chief of Medicine</p>
+              <p className="mt-3 body-sm text-primary-foreground/80">- Dr. Elena Vance, Chief of Medicine</p>
             </div>
           </div>
         </section>
 
-        <section className="rounded-[28px] border border-slate-200 bg-white p-8 shadow-[0_12px_32px_-4px_rgba(25,28,30,0.08)] md:p-10">
+        <section className="rounded-[28px] border border-border bg-card p-8 shadow-sm md:p-10">
           <div className="text-center">
-            <h2 className="text-4xl font-bold tracking-[-0.8px] text-slate-900">Create an Account</h2>
-            <p className="mt-2 text-sm text-slate-600">Select your profile type to begin</p>
+            <h2 className="h2 text-foreground">Create an Account</h2>
+            <p className="mt-2 body-sm text-muted-foreground">Select your profile type to begin</p>
           </div>
 
-          <div className="mt-8 grid grid-cols-2 rounded-xl bg-[#e7edf5] p-1 text-sm">
+          <div className="mt-8 grid grid-cols-2 rounded-xl bg-secondary p-1">
             <button
               onClick={() => setSelectedRole("patient")}
               className={`rounded-lg py-2.5 ${
                 selectedRole === "patient"
-                  ? "bg-white text-[#0065a1] shadow-sm"
-                  : "text-slate-700"
+                  ? "bg-card text-primary shadow-xs"
+                  : "text-muted-foreground"
               }`}
               type="button"
               aria-pressed={selectedRole === "patient"}
@@ -236,8 +399,8 @@ export default function SignUpPage() {
               onClick={() => setSelectedRole("doctor")}
               className={`rounded-lg py-2.5 ${
                 selectedRole === "doctor"
-                  ? "bg-white text-[#0065a1] shadow-sm"
-                  : "text-slate-700"
+                  ? "bg-card text-primary shadow-xs"
+                  : "text-muted-foreground"
               }`}
               type="button"
               aria-pressed={selectedRole === "doctor"}
@@ -247,33 +410,55 @@ export default function SignUpPage() {
           </div>
 
           <form className="mt-8 space-y-6" onSubmit={handleSubmit} noValidate>
-            <label className="block space-y-2 text-sm text-slate-800">
-              <span>Full Name</span>
-              <div className="relative">
-                <UserRound className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-slate-400" />
-                <Input
-                  className="h-12 rounded-xl border-slate-200 bg-white pl-9 placeholder:text-slate-500"
-                  placeholder="Full Name"
-                  value={fullName}
-                  onChange={(event) => {
-                    setFullName(event.target.value)
-                    setErrors((current) => ({ ...current, fullName: undefined }))
-                  }}
-                  aria-invalid={Boolean(errors.fullName)}
-                />
-              </div>
-              {errors.fullName ? (
-                <p className="text-xs text-red-600">{errors.fullName}</p>
-              ) : null}
-            </label>
+            <div className="grid gap-6 md:grid-cols-2">
+              <label className="block space-y-2">
+                <LabelWithMarker label="First Name" required />
+                <div className="relative">
+                  <UserRound className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    className="h-12 rounded-xl border-input bg-card pl-9 placeholder:text-muted-foreground"
+                    placeholder="First name"
+                    value={firstName}
+                    onChange={(event) => {
+                      setFirstName(event.target.value)
+                      setErrors((current) => ({ ...current, firstName: undefined }))
+                    }}
+                    aria-invalid={Boolean(errors.firstName)}
+                  />
+                </div>
+                {errors.firstName ? (
+                  <p className="helper-text text-destructive">{errors.firstName}</p>
+                ) : null}
+              </label>
 
-            <label className="block space-y-2 text-sm text-slate-800">
-              <span>Email Address</span>
+              <label className="block space-y-2">
+                <LabelWithMarker label="Last Name" required />
+                <div className="relative">
+                  <UserRound className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    className="h-12 rounded-xl border-input bg-card pl-9 placeholder:text-muted-foreground"
+                    placeholder="Last name"
+                    value={lastName}
+                    onChange={(event) => {
+                      setLastName(event.target.value)
+                      setErrors((current) => ({ ...current, lastName: undefined }))
+                    }}
+                    aria-invalid={Boolean(errors.lastName)}
+                  />
+                </div>
+                {errors.lastName ? (
+                  <p className="helper-text text-destructive">{errors.lastName}</p>
+                ) : null}
+              </label>
+            </div>
+
+            <label className="block space-y-2">
+              <LabelWithMarker label="Email Address" required />
               <div className="relative">
-                <Mail className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-slate-400" />
+                <Mail className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="email"
-                  className="h-12 rounded-xl border-slate-200 bg-white pl-9 placeholder:text-slate-500"
+                  className="h-12 rounded-xl border-input bg-card pl-9 placeholder:text-muted-foreground"
                   placeholder="mail@gmail.com"
                   value={email}
                   onChange={(event) => {
@@ -284,17 +469,280 @@ export default function SignUpPage() {
                 />
               </div>
               {errors.email ? (
-                <p className="text-xs text-red-600">{errors.email}</p>
+                <p className="helper-text text-destructive">{errors.email}</p>
               ) : null}
             </label>
 
-            <label className="block space-y-2 text-sm text-slate-800">
-              <span>Password</span>
+            {selectedRole === "patient" ? (
+              <>
+                <div className="grid gap-6 md:grid-cols-2">
+                  <label className="block space-y-2">
+                    <LabelWithMarker label="Date of Birth" required />
+                    <div className="relative">
+                      <Calendar className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="date"
+                        className="h-12 rounded-xl border-input bg-card pl-9 placeholder:text-muted-foreground"
+                        value={dateOfBirth}
+                        max={new Date().toISOString().slice(0, 10)}
+                        onChange={(event) => {
+                          setDateOfBirth(event.target.value)
+                          setErrors((current) => ({ ...current, dateOfBirth: undefined }))
+                        }}
+                        aria-invalid={Boolean(errors.dateOfBirth)}
+                      />
+                    </div>
+                    {errors.dateOfBirth ? (
+                      <p className="helper-text text-destructive">{errors.dateOfBirth}</p>
+                    ) : null}
+                  </label>
+                  <label className="block space-y-2">
+                    <LabelWithMarker label="Gender" required />
+                    <select
+                      className="flex h-12 w-full rounded-xl border border-input bg-card px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      value={gender}
+                      onChange={(event) => {
+                        const v = event.target.value
+                        setGender(
+                          v === "" || v === "male" || v === "female" || v === "other" ? v : ""
+                        )
+                        setErrors((current) => ({ ...current, gender: undefined }))
+                      }}
+                      aria-invalid={Boolean(errors.gender)}
+                    >
+                      <option value="">Select gender</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
+                    </select>
+                    {errors.gender ? (
+                      <p className="helper-text text-destructive">{errors.gender}</p>
+                    ) : null}
+                  </label>
+                </div>
+
+                <label className="block space-y-2">
+                  <LabelWithMarker label="Phone Number" />
+                  <div className="relative">
+                    <Phone className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      className="h-12 rounded-xl border-input bg-card pl-9 placeholder:text-muted-foreground"
+                      placeholder="+1 555 000 0000"
+                      value={phone}
+                      onChange={(event) => {
+                        setPhone(event.target.value)
+                        setErrors((current) => ({ ...current, phone: undefined }))
+                      }}
+                      aria-invalid={Boolean(errors.phone)}
+                    />
+                  </div>
+                  {errors.phone ? (
+                    <p className="helper-text text-destructive">{errors.phone}</p>
+                  ) : null}
+                </label>
+
+                <label className="block space-y-2">
+                  <LabelWithMarker label="Address" />
+                  <div className="relative">
+                    <MapPin className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      className="h-12 rounded-xl border-input bg-card pl-9 placeholder:text-muted-foreground"
+                      placeholder="Street, city, region"
+                      value={address}
+                      onChange={(event) => setAddress(event.target.value)}
+                    />
+                  </div>
+                </label>
+
+                <label className="block space-y-2">
+                  <LabelWithMarker label="Blood group" />
+                  <select
+                    className="flex h-12 w-full rounded-xl border border-input bg-card px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    value={bloodGroup}
+                    onChange={(event) =>
+                      setBloodGroup(event.target.value as typeof bloodGroup)
+                    }
+                  >
+                    <option value="">Prefer not to say</option>
+                    {BLOOD_GROUPS.map((g) => (
+                      <option key={g} value={g}>
+                        {g}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="block space-y-2">
+                  <LabelWithMarker label="Allergies" />
+                  <div className="relative">
+                    <AlertTriangle className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                    <textarea
+                      className="min-h-[88px] w-full resize-y rounded-xl border border-input bg-card py-3 pl-9 pr-3 text-sm placeholder:text-muted-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      placeholder="Comma-separated (e.g. peanuts, penicillin)"
+                      value={allergies}
+                      onChange={(event) => setAllergies(event.target.value)}
+                      rows={3}
+                    />
+                  </div>
+                  <p className="helper-text text-muted-foreground">
+                    List known allergies; clinicians review this at intake.
+                  </p>
+                </label>
+
+                <label className="block space-y-2">
+                  <LabelWithMarker label="Medical history" />
+                  <div className="relative">
+                    <HeartPulse className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                    <textarea
+                      className="min-h-[88px] w-full resize-y rounded-xl border border-input bg-card py-3 pl-9 pr-3 text-sm placeholder:text-muted-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      placeholder="Conditions, surgeries, chronic illnesses (optional)"
+                      value={medicalHistory}
+                      onChange={(event) => setMedicalHistory(event.target.value)}
+                      rows={3}
+                    />
+                  </div>
+                </label>
+
+                <div className="grid gap-6 md:grid-cols-2">
+                  <label className="block space-y-2">
+                    <LabelWithMarker label="Emergency contact name" />
+                    <div className="relative">
+                      <UserRound className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        className="h-12 rounded-xl border-input bg-card pl-9 placeholder:text-muted-foreground"
+                        placeholder="Full name"
+                        value={emergencyContactName}
+                        onChange={(event) => setEmergencyContactName(event.target.value)}
+                      />
+                    </div>
+                  </label>
+                  <label className="block space-y-2">
+                    <LabelWithMarker label="Emergency contact phone" />
+                    <div className="relative">
+                      <Phone className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        className="h-12 rounded-xl border-input bg-card pl-9 placeholder:text-muted-foreground"
+                        placeholder="+1 555 000 0000"
+                        value={emergencyContactPhone}
+                        onChange={(event) => {
+                          setEmergencyContactPhone(event.target.value)
+                          setErrors((current) => ({ ...current, emergencyContactPhone: undefined }))
+                        }}
+                        aria-invalid={Boolean(errors.emergencyContactPhone)}
+                      />
+                    </div>
+                    {errors.emergencyContactPhone ? (
+                      <p className="helper-text text-destructive">{errors.emergencyContactPhone}</p>
+                    ) : null}
+                  </label>
+                </div>
+              </>
+            ) : null}
+
+            {selectedRole === "doctor" ? (
+              <>
+                <label className="block space-y-2">
+                  <LabelWithMarker label="Phone Number" />
+                  <div className="relative">
+                    <Phone className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      className="h-12 rounded-xl border-input bg-card pl-9 placeholder:text-muted-foreground"
+                      placeholder="+1 555 000 0000"
+                      value={phone}
+                      onChange={(event) => {
+                        setPhone(event.target.value)
+                        setErrors((current) => ({ ...current, phone: undefined }))
+                      }}
+                      aria-invalid={Boolean(errors.phone)}
+                    />
+                  </div>
+                </label>
+                <div className="grid gap-6 md:grid-cols-2">
+                  <label className="block space-y-2">
+                    <LabelWithMarker label="Specialization" required />
+                    <div className="relative">
+                      <Stethoscope className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        className="h-12 rounded-xl border-input bg-card pl-9 placeholder:text-muted-foreground"
+                        placeholder="Cardiology"
+                        value={specialization}
+                        onChange={(event) => {
+                          setSpecialization(event.target.value)
+                          setErrors((current) => ({ ...current, specialization: undefined }))
+                        }}
+                        aria-invalid={Boolean(errors.specialization)}
+                      />
+                    </div>
+                    {errors.specialization ? (
+                      <p className="helper-text text-destructive">{errors.specialization}</p>
+                    ) : null}
+                  </label>
+                  <label className="block space-y-2">
+                    <LabelWithMarker label="License Number" required />
+                    <div className="relative">
+                      <IdCard className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        className="h-12 rounded-xl border-input bg-card pl-9 placeholder:text-muted-foreground"
+                        placeholder="LIC-123456"
+                        value={licenseNumber}
+                        onChange={(event) => {
+                          setLicenseNumber(event.target.value)
+                          setErrors((current) => ({ ...current, licenseNumber: undefined }))
+                        }}
+                        aria-invalid={Boolean(errors.licenseNumber)}
+                      />
+                    </div>
+                    {errors.licenseNumber ? (
+                      <p className="helper-text text-destructive">{errors.licenseNumber}</p>
+                    ) : null}
+                  </label>
+                </div>
+                <div className="grid gap-6 md:grid-cols-2">
+                  <label className="block space-y-2">
+                    <LabelWithMarker label="Years of Experience" />
+                    <div className="relative">
+                      <BriefcaseMedical className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="number"
+                        min={0}
+                        className="h-12 rounded-xl border-input bg-card pl-9 placeholder:text-muted-foreground"
+                        placeholder="0"
+                        value={yearsOfExperience}
+                        onChange={(event) => {
+                          setYearsOfExperience(event.target.value)
+                          setErrors((current) => ({ ...current, yearsOfExperience: undefined }))
+                        }}
+                        aria-invalid={Boolean(errors.yearsOfExperience)}
+                      />
+                    </div>
+                    {errors.yearsOfExperience ? (
+                      <p className="helper-text text-destructive">{errors.yearsOfExperience}</p>
+                    ) : null}
+                  </label>
+                  <label className="block space-y-2">
+                    <LabelWithMarker label="Professional Bio" />
+                    <Input
+                      className="h-12 rounded-xl border-input bg-card placeholder:text-muted-foreground"
+                      placeholder="Short bio (optional)"
+                      value={bio}
+                      onChange={(event) => {
+                        setBio(event.target.value)
+                        setErrors((current) => ({ ...current, bio: undefined }))
+                      }}
+                      aria-invalid={Boolean(errors.bio)}
+                    />
+                  </label>
+                </div>
+              </>
+            ) : null}
+
+            <label className="block space-y-2">
+              <LabelWithMarker label="Password" required />
               <div className="relative">
-                <LockKeyhole className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-slate-400" />
+                <LockKeyhole className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   type={isPasswordVisible ? "text" : "password"}
-                  className="h-12 rounded-xl border-slate-200 bg-white px-9 placeholder:text-slate-500"
+                  className="h-12 rounded-xl border-input bg-card px-9 placeholder:text-muted-foreground"
                   placeholder="Create a strong password"
                   value={password}
                   onChange={(event) => {
@@ -306,7 +754,7 @@ export default function SignUpPage() {
                 <button
                   type="button"
                   onClick={() => setIsPasswordVisible((current) => !current)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
                   aria-label={isPasswordVisible ? "Hide password" : "Show password"}
                 >
                   {isPasswordVisible ? (
@@ -317,17 +765,17 @@ export default function SignUpPage() {
                 </button>
               </div>
               {errors.password ? (
-                <p className="text-xs text-red-600">{errors.password}</p>
+                <p className="helper-text text-destructive">{errors.password}</p>
               ) : null}
             </label>
 
-            <label className="block space-y-2 text-sm text-slate-800">
-              <span>Confirm Password</span>
+            <label className="block space-y-2">
+              <LabelWithMarker label="Confirm Password" required />
               <div className="relative">
-                <LockKeyhole className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-slate-400" />
+                <LockKeyhole className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   type={isConfirmPasswordVisible ? "text" : "password"}
-                  className="h-12 rounded-xl border-slate-200 bg-white px-9 placeholder:text-slate-500"
+                  className="h-12 rounded-xl border-input bg-card px-9 placeholder:text-muted-foreground"
                   placeholder="Re-enter password"
                   value={confirmPassword}
                   onChange={(event) => {
@@ -339,7 +787,7 @@ export default function SignUpPage() {
                 <button
                   type="button"
                   onClick={() => setIsConfirmPasswordVisible((current) => !current)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
                   aria-label={
                     isConfirmPasswordVisible ? "Hide confirm password" : "Show confirm password"
                   }
@@ -352,47 +800,54 @@ export default function SignUpPage() {
                 </button>
               </div>
               {errors.confirmPassword ? (
-                <p className="text-xs text-red-600">{errors.confirmPassword}</p>
+                <p className="helper-text text-destructive">{errors.confirmPassword}</p>
               ) : null}
             </label>
 
             <Button
               type="submit"
-              className="mt-1 h-14 w-full rounded-2xl text-lg font-semibold text-white"
+              disabled={isSubmitting}
+              className="mt-1 h-14 w-full rounded-2xl h4 text-primary-foreground"
               style={{
                 backgroundImage:
                   "linear-gradient(122deg, #021f3a 0%, #005c92 52%, #021f3a 100%)",
               }}
             >
-              Create Account
+              {isSubmitting
+                ? "Creating Account..."
+                : selectedRole === "doctor"
+                  ? "Create Doctor Account"
+                  : "Create Patient Account"}
             </Button>
+            {submitError ? <p className="helper-text text-destructive">{submitError}</p> : null}
+            {submitSuccess ? <p className="helper-text text-success">{submitSuccess}</p> : null}
           </form>
 
           <div className="relative my-8 flex items-center justify-center">
-            <span className="absolute h-px w-full bg-slate-200" aria-hidden="true" />
-            <span className="relative bg-white px-4 text-sm font-medium tracking-wide text-slate-600">
+            <span className="absolute h-px w-full bg-border" aria-hidden="true" />
+            <span className="relative bg-card px-4 label text-muted-foreground">
               OR CONTINUE WITH
             </span>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <button className="flex h-11 items-center justify-center gap-2 rounded-xl bg-[#edf1f6] text-sm text-slate-800 transition hover:bg-[#e6ebf2]">
+            <button className="flex h-11 items-center justify-center gap-2 rounded-xl bg-secondary label text-foreground transition hover:bg-secondary/80">
               <GoogleIcon />
               Google
             </button>
-            <button className="flex h-11 items-center justify-center gap-2 rounded-xl bg-[#edf1f6] text-sm text-slate-800 transition hover:bg-[#e6ebf2]">
+            <button className="flex h-11 items-center justify-center gap-2 rounded-xl bg-secondary label text-foreground transition hover:bg-secondary/80">
               <AppleIcon />
               Apple
             </button>
           </div>
 
-          <p className="mt-8 text-center text-xs leading-5 text-slate-600">
+          <p className="mt-8 text-center helper-text leading-5">
             By signing up, you agree to our{" "}
-            <Link href="#" className="font-medium text-sky-700 hover:text-sky-800">
+            <Link href="#" className="label text-primary hover:text-secondary-foreground">
               Terms of Service
             </Link>{" "}
             and{" "}
-            <Link href="#" className="font-medium text-sky-700 hover:text-sky-800">
+            <Link href="#" className="label text-primary hover:text-secondary-foreground">
               Privacy Policy
             </Link>
             .

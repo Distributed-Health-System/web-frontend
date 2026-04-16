@@ -1,0 +1,7 @@
+export * from "./types"
+export * from "./lib/mock-data"
+export { FindDoctorsView } from "./components/find-doctors/FindDoctorsView"
+export { PatientAppointmentsView } from "./components/appointments/PatientAppointmentsView"
+export { PatientLabReportsView } from "./components/lab-reports/PatientLabReportsView"
+export { PatientPrescriptionsView } from "./components/prescriptions/PatientPrescriptionsView"
+export { PatientPaymentsView } from "./components/payments/PatientPaymentsView"
