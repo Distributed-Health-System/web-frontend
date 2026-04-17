@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/sonner";
 
 // Root layout config shared by all routes in the app router.
 
@@ -33,6 +34,7 @@ export default function RootLayout({
       <body className="min-h-screen flex flex-col bg-background text-foreground">
         <TooltipProvider>
           {children}
+          <Toaster />
         </TooltipProvider>
       </body>
     </html>
