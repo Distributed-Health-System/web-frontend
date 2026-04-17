@@ -5,17 +5,20 @@ export interface LoginPayload {
   password: string
 }
 
-export interface AuthTokens {
-  accessToken: string
-  refreshToken: string
+export interface LoginResponse {
   expiresIn: number
 }
 
-export async function loginRequest(payload: LoginPayload): Promise<AuthTokens> {
-  const { data } = await apiClient.post<AuthTokens>("/auth/login", payload)
+export async function loginRequest(payload: LoginPayload): Promise<LoginResponse> {
+  const { data } = await apiClient.post<LoginResponse>("/auth/login", payload)
   return data
 }
 
-export async function logoutRequest(refreshToken: string): Promise<void> {
-  await apiClient.post("/auth/logout", { refreshToken })
+export async function refreshRequest(): Promise<LoginResponse> {
+  const { data } = await apiClient.post<LoginResponse>("/auth/refresh")
+  return data
+}
+
+export async function logoutRequest(): Promise<void> {
+  await apiClient.post("/auth/logout")
 }
