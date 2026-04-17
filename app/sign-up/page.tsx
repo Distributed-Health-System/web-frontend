@@ -26,12 +26,13 @@ import { AuthFooter } from "@/components/layout/auth-footer"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { registerDoctor } from "@/features/doctor/lib/doctor-registration.api"
+import { registerPatient } from "@/features/patient/lib/patient-registration.api"
 
 // Basic email shape validation for client-side checks.
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 // Mirrors patient-service CreatePatientDto phone rules (optional when set).
 const PHONE_PATTERN = /^[+()\-.\s0-9]{7,20}$/
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? ""
 
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"] as const
 
@@ -211,73 +212,56 @@ export default function SignUpPage() {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    // Stop submit until all inputs pass local validation rules.
     const nextErrors = validate()
     setErrors(nextErrors)
     setSubmitError(null)
     setSubmitSuccess(null)
 
-    if (Object.keys(nextErrors).length > 0) {
-      return
-    }
+    if (Object.keys(nextErrors).length > 0) return
 
-    if (selectedRole === "patient") {
-      setSubmitSuccess(
-        "Your patient profile details look good. Backend signup will be connected next—you can sign in once it is available."
-      )
-      return
-    }
-
-    if (!API_BASE_URL) {
-      setSubmitError("Missing NEXT_PUBLIC_API_URL. Add it in .env.local before signing up.")
-      return
-    }
-
-    const doctorPayload: Record<string, string | number> = {
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      email: email.trim(),
-      password,
-      specialization: specialization.trim(),
-      licenseNumber: licenseNumber.trim(),
-    }
-
-    if (phone.trim()) doctorPayload.phone = phone.trim()
-    if (bio.trim()) doctorPayload.bio = bio.trim()
-    if (yearsOfExperience.trim()) doctorPayload.yearsOfExperience = Number(yearsOfExperience)
-
+    setIsSubmitting(true)
     try {
-      setIsSubmitting(true)
-      const response = await fetch(`${API_BASE_URL}/doctors`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(doctorPayload),
-      })
-
-      if (!response.ok) {
-        let message = "Doctor signup failed. Please try again."
-        try {
-          const errorBody = await response.json()
-          if (typeof errorBody?.message === "string") {
-            message = errorBody.message
-          } else if (Array.isArray(errorBody?.message)) {
-            message = errorBody.message.join(", ")
-          }
-        } catch {
-          // Keep fallback message if body is not JSON.
-        }
-        setSubmitError(message)
-        return
+      if (selectedRole === "doctor") {
+        await registerDoctor({
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          email: email.trim(),
+          password,
+          specialization: specialization.trim(),
+          licenseNumber: licenseNumber.trim(),
+          ...(phone.trim() ? { phone: phone.trim() } : {}),
+          ...(bio.trim() ? { bio: bio.trim() } : {}),
+          ...(yearsOfExperience.trim() ? { yearsOfExperience: Number(yearsOfExperience) } : {}),
+        })
+        setSubmitSuccess("Doctor account created. Awaiting admin approval. Redirecting to login…")
+        setTimeout(() => router.push("/login"), 1200)
+      } else {
+        await registerPatient({
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          email: email.trim(),
+          password,
+          dateOfBirth: dateOfBirth,
+          gender: gender as "male" | "female" | "other",
+          ...(phone.trim() ? { phone: phone.trim() } : {}),
+          ...(address.trim() ? { address: address.trim() } : {}),
+          ...(bloodGroup ? { bloodGroup } : {}),
+          ...(allergies.trim()
+            ? { allergies: allergies.split(",").map((a) => a.trim()).filter(Boolean) }
+            : {}),
+          ...(medicalHistory.trim() ? { medicalHistory: medicalHistory.trim() } : {}),
+          ...(emergencyContactName.trim() ? { emergencyContactName: emergencyContactName.trim() } : {}),
+          ...(emergencyContactPhone.trim() ? { emergencyContactPhone: emergencyContactPhone.trim() } : {}),
+        })
+        setSubmitSuccess("Account created! Redirecting to login…")
+        setTimeout(() => router.push("/login"), 1200)
       }
-
-      setSubmitSuccess("Doctor account created. Awaiting admin approval. Redirecting to login...")
-      setTimeout(() => {
-        router.push("/login")
-      }, 1200)
-    } catch {
-      setSubmitError("Unable to reach signup service. Check API gateway and try again.")
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { message?: string | string[] } } }
+      const msg = axiosError?.response?.data?.message
+      if (Array.isArray(msg)) setSubmitError(msg.join(", "))
+      else if (typeof msg === "string") setSubmitError(msg)
+      else setSubmitError("Registration failed. Please try again.")
     } finally {
       setIsSubmitting(false)
     }

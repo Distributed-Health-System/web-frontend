@@ -1,30 +1,12 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { AlertCircle, Clock, Loader2, Search, Stethoscope } from "lucide-react"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { AlertCircle, Loader2, Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet"
 import { getDoctors, type Doctor } from "@/features/doctor/lib/doctor.api"
 import { getFreeSlotsForDoctor, type FreeSlot } from "@/features/doctor/lib/availability.api"
-
-function doctorInitials(d: Doctor) {
-  return `${d.firstName[0]}${d.lastName[0]}`.toUpperCase()
-}
-
-function doctorFullName(d: Doctor) {
-  return `Dr. ${d.firstName} ${d.lastName}`
-}
+import { DoctorCard } from "./DoctorCard"
+import { DoctorSheet } from "./DoctorSheet"
 
 function matchesSearch(d: Doctor, query: string): boolean {
   if (!query.trim()) return true
@@ -49,7 +31,6 @@ export function FindDoctorsView() {
   const [slotsLoading, setSlotsLoading] = useState(false)
 
   useEffect(() => {
-    setIsLoading(true)
     getDoctors()
       .then(setDoctors)
       .catch(() => setError("Could not load doctors. Please try again."))
@@ -74,16 +55,18 @@ export function FindDoctorsView() {
     [doctors],
   )
 
-  const filtered = useMemo(() => {
-    return doctors.filter((d) => {
-      if (specialtyFilter !== "all" && d.specialization !== specialtyFilter) return false
-      return matchesSearch(d, query)
-    })
-  }, [doctors, query, specialtyFilter])
+  const filtered = useMemo(
+    () =>
+      doctors.filter((d) => {
+        if (specialtyFilter !== "all" && d.specialization !== specialtyFilter) return false
+        return matchesSearch(d, query)
+      }),
+    [doctors, query, specialtyFilter],
+  )
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-24 gap-3 text-muted-foreground">
+      <div className="flex items-center justify-center gap-3 py-24 text-muted-foreground">
         <Loader2 className="h-5 w-5 animate-spin" />
         <span className="body-sm">Loading doctors…</span>
       </div>
@@ -92,7 +75,7 @@ export function FindDoctorsView() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center py-24 gap-3 text-destructive">
+      <div className="flex items-center justify-center gap-3 py-24 text-destructive">
         <AlertCircle className="h-5 w-5 shrink-0" />
         <span className="body-sm">{error}</span>
       </div>
@@ -112,7 +95,7 @@ export function FindDoctorsView() {
             aria-label="Search doctors"
           />
         </div>
-        <div className="flex w-full flex-col gap-1.5 sm:w-56 shrink-0">
+        <div className="flex w-full flex-col gap-1.5 shrink-0 sm:w-56">
           <label htmlFor="specialty-filter" className="label text-muted-foreground">
             Specialization
           </label>
@@ -143,154 +126,18 @@ export function FindDoctorsView() {
         <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {filtered.map((doctor) => (
             <li key={doctor.id}>
-              <button
-                type="button"
-                onClick={() => setSelected(doctor)}
-                className="h-full w-full text-left rounded-card transition hover:opacity-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                <Card className="h-full min-h-[200px] cursor-pointer transition hover:shadow-sm">
-                  <CardHeader className="gap-3">
-                    <div className="flex items-start gap-3">
-                      <Avatar className="size-14 shrink-0">
-                        <AvatarFallback className="bg-secondary text-lg text-secondary-foreground">
-                          {doctorInitials(doctor)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0 flex-1 space-y-1">
-                        <CardTitle className="text-base leading-snug">
-                          {doctorFullName(doctor)}
-                        </CardTitle>
-                        <div className="flex flex-wrap gap-1.5">
-                          <Badge variant="secondary" className="font-normal">
-                            <Stethoscope className="mr-1 size-3" aria-hidden />
-                            {doctor.specialization}
-                          </Badge>
-                          {doctor.isAvailable && (
-                            <Badge className="bg-success/10 text-success font-normal border-0">
-                              Available
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <CardDescription className="line-clamp-2 text-left">
-                      {doctor.bio}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <p className="helper-text text-muted-foreground">
-                      {doctor.yearsOfExperience} yrs experience
-                    </p>
-                  </CardContent>
-                </Card>
-              </button>
+              <DoctorCard doctor={doctor} onClick={() => setSelected(doctor)} />
             </li>
           ))}
         </ul>
       )}
 
-      <Sheet open={selected !== null} onOpenChange={(open) => !open && setSelected(null)}>
-        <SheetContent side="right" className="w-full sm:max-w-md">
-          {selected && (
-            <>
-              <SheetHeader className="space-y-4 border-b border-border pb-6 text-left">
-                <div className="flex items-start gap-4">
-                  <Avatar className="size-20">
-                    <AvatarFallback className="bg-secondary text-xl text-secondary-foreground">
-                      {doctorInitials(selected)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0 flex-1 space-y-2">
-                    <SheetTitle className="text-xl leading-tight">
-                      {doctorFullName(selected)}
-                    </SheetTitle>
-                    <div className="flex gap-2 flex-wrap">
-                      <Badge variant="secondary" className="font-normal">
-                        {selected.specialization}
-                      </Badge>
-                      {selected.isAvailable && (
-                        <Badge className="bg-success/10 text-success font-normal border-0">
-                          Available
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <SheetDescription asChild>
-                  <p className="body-base leading-relaxed text-muted-foreground">{selected.bio}</p>
-                </SheetDescription>
-              </SheetHeader>
-
-              <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-6 py-6">
-                <section className="space-y-2">
-                  <h3 className="label flex items-center gap-2 text-foreground">
-                    <Stethoscope className="size-4" />
-                    Details
-                  </h3>
-                  <dl className="space-y-1 body-sm text-muted-foreground">
-                    <div className="flex justify-between">
-                      <dt>Experience</dt>
-                      <dd className="text-foreground">{selected.yearsOfExperience} years</dd>
-                    </div>
-                    <div className="flex justify-between">
-                      <dt>License</dt>
-                      <dd className="text-foreground font-mono text-xs">{selected.licenseNumber}</dd>
-                    </div>
-                    <div className="flex justify-between">
-                      <dt>Contact</dt>
-                      <dd className="text-foreground">{selected.phone || selected.email}</dd>
-                    </div>
-                  </dl>
-                </section>
-
-                <section>
-                  <h3 className="label mb-3 flex items-center gap-2 text-foreground">
-                    <Clock className="size-4" aria-hidden />
-                    Available slots this week
-                  </h3>
-                  {slotsLoading ? (
-                    <div className="flex items-center gap-2 text-muted-foreground body-sm">
-                      <Loader2 className="size-4 animate-spin" />
-                      Loading slots…
-                    </div>
-                  ) : freeSlots.length === 0 ? (
-                    <p className="body-sm text-muted-foreground">No available slots in the next 7 days.</p>
-                  ) : (
-                    <ul className="flex flex-wrap gap-2">
-                      {freeSlots.map((slot) => {
-                        const date = new Date(slot.start)
-                        const label = date.toLocaleString(undefined, {
-                          weekday: "short",
-                          month: "short",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })
-                        return (
-                          <li key={slot.start}>
-                            <span className="inline-flex rounded-lg border border-border bg-muted/50 px-2.5 py-1 font-mono text-xs text-foreground">
-                              {label}
-                            </span>
-                          </li>
-                        )
-                      })}
-                    </ul>
-                  )}
-                </section>
-              </div>
-
-              <SheetFooter className="border-t border-border sm:flex-col sm:space-x-0">
-                <Button type="button" className="w-full" disabled={!selected.isAvailable}>
-                  {selected.isAvailable ? "Request appointment" : "Not available"}
-                </Button>
-                <p className="helper-text text-center text-muted-foreground">
-                  Appointment booking will activate when the service is wired.
-                </p>
-              </SheetFooter>
-            </>
-          )}
-        </SheetContent>
-      </Sheet>
+      <DoctorSheet
+        doctor={selected}
+        freeSlots={freeSlots}
+        slotsLoading={slotsLoading}
+        onClose={() => setSelected(null)}
+      />
     </>
   )
 }
