@@ -35,8 +35,9 @@ export interface DoctorPatient {
   conditions?: string[]
 }
 
-export interface PrescriptionMedication {
-  id: string
+export type PrescriptionStatus = "ACTIVE" | "AMENDED" | "REVOKED"
+
+export interface MedicationLine {
   name: string
   dosage: string
   frequency: string
@@ -44,14 +45,37 @@ export interface PrescriptionMedication {
   instructions?: string
 }
 
-export interface Prescription {
+export interface PrescriptionArtifact {
+  blobKey?: string
+  fileUrl?: string
+  mimeType?: string
+}
+
+/** Serialized prescription record (dates as ISO strings). */
+export interface DoctorPrescription {
   id: string
+  doctorUserId: string
+  doctorProfileId: string
   patientId: string
-  patientName: string
-  issuedAt: string
-  medications: PrescriptionMedication[]
-  notes?: string
   appointmentId?: string
+  version: number
+  status: PrescriptionStatus
+  previousPrescriptionId?: string
+  items: MedicationLine[]
+  diagnosis?: string
+  notes?: string
+  issuedAt: string
+  validUntil?: string
+  artifact?: PrescriptionArtifact
+  revocationReason?: string
+  revokedAt?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+/** Medication line with a client-side row id for editing. */
+export interface PrescriptionMedication extends MedicationLine {
+  id: string
 }
 
 export type Weekday = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday"
@@ -62,3 +86,37 @@ export interface TimeSlot {
 }
 
 export type WeeklyAvailability = Record<Weekday, TimeSlot[]>
+
+/** Aligns with doctor-service `PutAvailabilityScheduleDto` / schedule document. */
+export interface DoctorTimeWindow {
+  start: string
+  end: string
+}
+
+export interface DoctorWeeklyRule {
+  dayOfWeek: number
+  windows: DoctorTimeWindow[]
+}
+
+export interface DoctorBreakRule {
+  dayOfWeek: number
+  start: string
+  end: string
+}
+
+export interface DoctorDateOverride {
+  date: string
+  isOff: boolean
+  windows?: DoctorTimeWindow[]
+}
+
+export interface DoctorAvailabilitySchedule {
+  timezone: string
+  slotDurationMinutes: 30 | 60
+  weeklyRules: DoctorWeeklyRule[]
+  breakRules: DoctorBreakRule[]
+  dateOverrides: DoctorDateOverride[]
+  effectiveFrom?: string
+  effectiveTo?: string
+  isActive: boolean
+}

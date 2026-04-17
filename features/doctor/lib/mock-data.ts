@@ -1,8 +1,8 @@
 import type {
   DoctorAppointment,
+  DoctorAvailabilitySchedule,
   DoctorPatient,
-  Prescription,
-  WeeklyAvailability,
+  DoctorPrescription,
 } from "../types"
 
 export const mockAppointments: DoctorAppointment[] = [
@@ -145,46 +145,82 @@ export const mockPatients: DoctorPatient[] = [
   },
 ]
 
-export const mockPrescriptions: Prescription[] = [
+export const mockPrescriptions: DoctorPrescription[] = [
   {
     id: "rx-1",
+    doctorUserId: "user-doctor-demo",
+    doctorProfileId: "profile-doctor-demo",
     patientId: "p-1",
-    patientName: "Sarah Johnson",
-    issuedAt: "2026-04-10",
     appointmentId: "apt-4",
-    medications: [
-      { id: "m-1", name: "Metformin", dosage: "500mg", frequency: "Twice daily", duration: "30 days", instructions: "Take with meals" },
-      { id: "m-2", name: "Lisinopril", dosage: "10mg", frequency: "Once daily", duration: "30 days", instructions: "Take in the morning" },
+    version: 1,
+    status: "ACTIVE",
+    items: [
+      { name: "Metformin", dosage: "500mg", frequency: "Twice daily", duration: "30 days", instructions: "Take with meals" },
+      { name: "Lisinopril", dosage: "10mg", frequency: "Once daily", duration: "30 days", instructions: "Take in the morning" },
     ],
+    diagnosis: "Type 2 diabetes mellitus; essential hypertension",
     notes: "Monitor blood pressure weekly. Return in 30 days.",
+    issuedAt: "2026-04-10T15:00:00.000Z",
+    validUntil: "2026-07-10T00:00:00.000Z",
   },
   {
     id: "rx-2",
+    doctorUserId: "user-doctor-demo",
+    doctorProfileId: "profile-doctor-demo",
     patientId: "p-3",
-    patientName: "Emily Rodriguez",
-    issuedAt: "2026-03-20",
-    medications: [
-      { id: "m-3", name: "Albuterol Inhaler", dosage: "90mcg", frequency: "As needed", duration: "60 days", instructions: "2 puffs during asthma attack" },
-      { id: "m-4", name: "Fluticasone", dosage: "110mcg", frequency: "Twice daily", duration: "60 days", instructions: "Rinse mouth after use" },
+    version: 1,
+    status: "ACTIVE",
+    items: [
+      { name: "Albuterol Inhaler", dosage: "90mcg", frequency: "As needed", duration: "60 days", instructions: "2 puffs during asthma attack" },
+      { name: "Fluticasone", dosage: "110mcg", frequency: "Twice daily", duration: "60 days", instructions: "Rinse mouth after use" },
     ],
+    diagnosis: "Persistent asthma",
     notes: "Avoid triggers. Use peak flow meter daily.",
+    issuedAt: "2026-03-20T10:30:00.000Z",
+    validUntil: "2026-06-20T00:00:00.000Z",
+  },
+  {
+    id: "rx-3",
+    doctorUserId: "user-doctor-demo",
+    doctorProfileId: "profile-doctor-demo",
+    patientId: "p-4",
+    version: 1,
+    status: "REVOKED",
+    items: [{ name: "Sumatriptan", dosage: "50mg", frequency: "As needed", duration: "14 days", instructions: "Max 2 tablets per 24h" }],
+    diagnosis: "Migraine",
+    notes: "Initial acute plan.",
+    issuedAt: "2026-04-05T09:00:00.000Z",
+    revocationReason: "Switched to alternate acute therapy",
+    revokedAt: "2026-04-12T11:00:00.000Z",
   },
 ]
 
 export const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"] as const
 
-const generateTimeSlots = (start: number, end: number, available: boolean[]): { time: string; available: boolean }[] =>
-  Array.from({ length: end - start }, (_, i) => ({
-    time: `${String(start + i).padStart(2, "0")}:00`,
-    available: available[i] ?? false,
-  }))
-
-export const mockAvailability: WeeklyAvailability = {
-  Monday:    generateTimeSlots(8, 18, [true, true, true, false, true, true, false, true, true, false]),
-  Tuesday:   generateTimeSlots(8, 18, [true, true, false, false, true, true, true, true, false, false]),
-  Wednesday: generateTimeSlots(8, 18, [false, false, false, false, true, true, true, false, false, false]),
-  Thursday:  generateTimeSlots(8, 18, [true, true, true, false, true, true, false, false, false, false]),
-  Friday:    generateTimeSlots(8, 18, [true, true, false, false, false, true, true, true, false, false]),
-  Saturday:  generateTimeSlots(8, 18, [false, false, false, false, false, false, false, false, false, false]),
-  Sunday:    generateTimeSlots(8, 18, [false, false, false, false, false, false, false, false, false, false]),
+/** Default template matching doctor-service availability shape (`weeklyRules` use `dayOfWeek` 0–6). */
+export const defaultDoctorAvailabilitySchedule: DoctorAvailabilitySchedule = {
+  timezone: "America/New_York",
+  slotDurationMinutes: 30,
+  weeklyRules: [
+    {
+      dayOfWeek: 1,
+      windows: [
+        { start: "09:00", end: "12:00" },
+        { start: "13:00", end: "17:00" },
+      ],
+    },
+    {
+      dayOfWeek: 2,
+      windows: [
+        { start: "09:00", end: "12:00" },
+        { start: "13:00", end: "17:00" },
+      ],
+    },
+    { dayOfWeek: 3, windows: [{ start: "09:00", end: "12:00" }] },
+    { dayOfWeek: 4, windows: [{ start: "10:00", end: "16:00" }] },
+    { dayOfWeek: 5, windows: [{ start: "09:00", end: "13:00" }] },
+  ],
+  breakRules: [{ dayOfWeek: 1, start: "11:00", end: "11:30" }],
+  dateOverrides: [],
+  isActive: true,
 }
