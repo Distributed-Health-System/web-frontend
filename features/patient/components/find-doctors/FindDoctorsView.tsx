@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { AlertCircle, Calendar, Loader2, Search, Stethoscope } from "lucide-react"
+import { AlertCircle, Clock, Loader2, Search, Stethoscope } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -16,6 +16,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { getDoctors, type Doctor } from "@/features/doctor/lib/doctor.api"
+import { getFreeSlotsForDoctor, type FreeSlot } from "@/features/doctor/lib/availability.api"
 
 function doctorInitials(d: Doctor) {
   return `${d.firstName[0]}${d.lastName[0]}`.toUpperCase()
@@ -44,6 +45,8 @@ export function FindDoctorsView() {
   const [query, setQuery] = useState("")
   const [specialtyFilter, setSpecialtyFilter] = useState("all")
   const [selected, setSelected] = useState<Doctor | null>(null)
+  const [freeSlots, setFreeSlots] = useState<FreeSlot[]>([])
+  const [slotsLoading, setSlotsLoading] = useState(false)
 
   useEffect(() => {
     setIsLoading(true)
@@ -52,6 +55,19 @@ export function FindDoctorsView() {
       .catch(() => setError("Could not load doctors. Please try again."))
       .finally(() => setIsLoading(false))
   }, [])
+
+  useEffect(() => {
+    if (!selected) { setFreeSlots([]); return }
+    const from = new Date()
+    const to = new Date(from)
+    to.setDate(to.getDate() + 7)
+    const fmt = (d: Date) => d.toISOString().split("T")[0]
+    setSlotsLoading(true)
+    getFreeSlotsForDoctor(selected.userId, fmt(from), fmt(to))
+      .then(setFreeSlots)
+      .catch(() => setFreeSlots([]))
+      .finally(() => setSlotsLoading(false))
+  }, [selected])
 
   const specialties = useMemo(
     () => Array.from(new Set(doctors.map((d) => d.specialization))).sort(),
@@ -228,14 +244,38 @@ export function FindDoctorsView() {
                 </section>
 
                 <section>
-                  <h3 className="label mb-2 flex items-center gap-2 text-foreground">
-                    <Calendar className="size-4" />
-                    Next steps
+                  <h3 className="label mb-3 flex items-center gap-2 text-foreground">
+                    <Clock className="size-4" aria-hidden />
+                    Available slots this week
                   </h3>
-                  <p className="body-sm text-muted-foreground">
-                    You can book a video consultation with this provider once appointments are
-                    connected.
-                  </p>
+                  {slotsLoading ? (
+                    <div className="flex items-center gap-2 text-muted-foreground body-sm">
+                      <Loader2 className="size-4 animate-spin" />
+                      Loading slots…
+                    </div>
+                  ) : freeSlots.length === 0 ? (
+                    <p className="body-sm text-muted-foreground">No available slots in the next 7 days.</p>
+                  ) : (
+                    <ul className="flex flex-wrap gap-2">
+                      {freeSlots.map((slot) => {
+                        const date = new Date(slot.start)
+                        const label = date.toLocaleString(undefined, {
+                          weekday: "short",
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                        return (
+                          <li key={slot.start}>
+                            <span className="inline-flex rounded-lg border border-border bg-muted/50 px-2.5 py-1 font-mono text-xs text-foreground">
+                              {label}
+                            </span>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  )}
                 </section>
               </div>
 

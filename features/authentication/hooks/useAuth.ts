@@ -2,7 +2,9 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import axios from "axios"
 import { loginRequest, logoutRequest, type LoginPayload } from "../lib/authentication.api"
+import { scheduleTokenRefresh, cancelTokenRefresh } from "@/lib/api-base"
 
 interface UseAuthReturn {
   isSubmitting: boolean
@@ -21,29 +23,25 @@ export function useAuth(): UseAuthReturn {
     setSubmitError(null)
 
     try {
-      const tokens = await loginRequest(payload)
-      sessionStorage.setItem("accessToken", tokens.accessToken)
-      sessionStorage.setItem("refreshToken", tokens.refreshToken)
-      // TODO: decode role from accessToken JWT and route accordingly
+      const { expiresIn } = await loginRequest(payload)
+      scheduleTokenRefresh(expiresIn)
+      // TODO: decode role from accessToken cookie (via /auth/me endpoint) and route accordingly
       router.push("/patient/dashboard")
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "Unable to reach the server.")
+      const message = axios.isAxiosError(err)
+        ? (err.response?.data as { message?: string })?.message ?? "Unable to reach the server."
+        : "Unable to reach the server."
+      setSubmitError(message)
     } finally {
       setIsSubmitting(false)
     }
   }
 
   const logout = async () => {
-    const refreshToken = sessionStorage.getItem("refreshToken")
-    sessionStorage.removeItem("accessToken")
-    sessionStorage.removeItem("refreshToken")
-
-    if (refreshToken) {
-      await logoutRequest(refreshToken).catch(() => {
-        // best-effort — session is already cleared locally
-      })
-    }
-
+    cancelTokenRefresh()
+    await logoutRequest().catch(() => {
+      // best-effort — cookies cleared server-side
+    })
     router.push("/login")
   }
 
