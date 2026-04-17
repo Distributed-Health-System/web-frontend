@@ -6,6 +6,8 @@ export interface LoginPayload {
 }
 
 export interface LoginResponse {
+  accessToken: string
+  refreshToken: string
   expiresIn: number
 }
 
@@ -14,11 +16,6 @@ export async function loginRequest(payload: LoginPayload): Promise<LoginResponse
   return data
 }
 
-export async function refreshRequest(): Promise<LoginResponse> {
-  const { data } = await apiClient.post<LoginResponse>("/auth/refresh")
-  return data
-}
-
-export async function logoutRequest(): Promise<void> {
-  await apiClient.post("/auth/logout")
+export async function logoutRequest(refreshToken: string): Promise<void> {
+  await apiClient.post("/auth/logout", { refreshToken })
 }

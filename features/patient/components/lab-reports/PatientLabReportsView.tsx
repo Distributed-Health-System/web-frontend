@@ -23,9 +23,19 @@ import {
   readFileAsDataUrl,
   saveLabReports,
 } from "../../lib/lab-reports-storage"
+import {
+  createReportUploadIntent,
+  deleteReport,
+  finalizeReportUpload,
+  getMyPatientId,
+  getMyReports,
+  getReportDownloadUrl,
+  type PatientReport,
+} from "../../lib/patient-reports.api"
 
-const ACCEPT = "image/*,application/pdf"
-const MAX_FILE_BYTES = 12 * 1024 * 1024
+const ACCEPT = "image/jpeg,image/png,application/pdf"
+const MAX_FILE_BYTES = 10 * 1024 * 1024
+const USE_LOCAL_REPORTS_DEV_MODE = true
 
 function inferCategory(mime: string): PatientLabReport["category"] {
   if (mime.startsWith("image/")) return "scan"
@@ -41,40 +51,72 @@ function formatBytes(n: number): string {
 
 export function PatientLabReportsView() {
   const [reports, setReports] = useState<PatientLabReport[]>([])
-  const [hydrated, setHydrated] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [title, setTitle] = useState("")
   const [isDragging, setIsDragging] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [isDownloading, setIsDownloading] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [patientId, setPatientId] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const refresh = useCallback(() => {
-    setReports(loadLabReports())
-  }, [])
-
-  useEffect(() => {
-    refresh()
-    setHydrated(true)
-  }, [refresh])
-
-  const persist = useCallback((next: PatientLabReport[]) => {
-    try {
-      saveLabReports(next)
-      setReports(next)
-      setError(null)
-    } catch (e) {
-      if (e instanceof Error && e.message === "STORAGE_FULL") {
-        setError("Browser storage is full. Remove a report or use a smaller file.")
-      } else {
-        setError("Could not save. Try a smaller file.")
-      }
+  const mapReport = useCallback((report: PatientReport): PatientLabReport => {
+    const rawFileName = report.fileUrl.split("/").pop() ?? `${report.id}.pdf`
+    const fileName = decodeURIComponent(rawFileName)
+    return {
+      id: report.id,
+      title: report.title,
+      uploadedAt: report.uploadedAt,
+      category: report.category ?? "other",
+      status: "pending",
+      fileName,
+      mimeType: report.mimeType,
+      fileSizeBytes: 0,
     }
   }, [])
+
+  const refreshReports = useCallback(async (id: string) => {
+    if (USE_LOCAL_REPORTS_DEV_MODE) {
+      setReports(loadLabReports())
+      setError(null)
+      return
+    }
+    try {
+      const data = await getMyReports(id)
+      setReports(data.map(mapReport))
+      setError(null)
+    } catch {
+      setError("Could not load your reports. Please refresh and try again.")
+    }
+  }, [mapReport])
+
+  useEffect(() => {
+    const init = async () => {
+      if (USE_LOCAL_REPORTS_DEV_MODE) {
+        setReports(loadLabReports())
+        setError(null)
+        setIsLoading(false)
+        return
+      }
+      try {
+        const id = await getMyPatientId()
+        setPatientId(id)
+        await refreshReports(id)
+      } catch {
+        setError("Could not load patient profile. Please log in again.")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    void init()
+  }, [refreshReports])
 
   const processFile = async (file: File) => {
     setError(null)
     const allowed =
-      file.type.startsWith("image/") || file.type === "application/pdf"
+      file.type === "image/jpeg" || file.type === "image/png" || file.type === "application/pdf"
     if (!allowed) {
       setError("Please upload a PDF or an image (PNG, JPG, etc.).")
       return
@@ -86,31 +128,72 @@ export function PatientLabReportsView() {
 
     setIsUploading(true)
     try {
-      let previewDataUrl: string | undefined
-      const canEmbed =
-        (file.type.startsWith("image/") || file.type === "application/pdf") &&
-        file.size <= MAX_PREVIEW_BYTES
-      if (canEmbed) {
-        previewDataUrl = await readFileAsDataUrl(file)
+      const safeTitle = title.trim() || file.name.replace(/\.[^.]+$/, "") || "Untitled report"
+      const uploadedAt = new Date().toISOString()
+      const category = inferCategory(file.type)
+      if (USE_LOCAL_REPORTS_DEV_MODE) {
+        let previewDataUrl: string | undefined
+        const canEmbed =
+          (file.type.startsWith("image/") || file.type === "application/pdf") &&
+          file.size <= MAX_PREVIEW_BYTES
+        if (canEmbed) {
+          previewDataUrl = await readFileAsDataUrl(file)
+        }
+        const localReport: PatientLabReport = {
+          id: crypto.randomUUID(),
+          title: safeTitle,
+          uploadedAt,
+          category,
+          status: "pending",
+          fileName: file.name,
+          mimeType: file.type,
+          fileSizeBytes: file.size,
+          previewDataUrl,
+        }
+        const next = [localReport, ...loadLabReports()]
+        saveLabReports(next)
+        setReports(next)
+        setTitle("")
+        setError(null)
+        return
+      }
+      if (!patientId) {
+        setError("Please sign in again.")
+        return
       }
 
-      const report: PatientLabReport = {
-        id: crypto.randomUUID(),
-        title: title.trim() || file.name.replace(/\.[^.]+$/, "") || "Untitled report",
-        uploadedAt: new Date().toISOString(),
-        category: inferCategory(file.type),
-        status: "pending",
-        fileName: file.name,
-        mimeType: file.type || "application/octet-stream",
-        fileSizeBytes: file.size,
-        previewDataUrl,
+      const intent = await createReportUploadIntent(patientId, {
+        title: safeTitle,
+        filename: file.name,
+        mimeType: file.type,
+        sizeBytes: file.size,
+        category,
+      })
+
+      const uploadResponse = await fetch(intent.uploadUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": intent.requiredHeaders["Content-Type"],
+        },
+        body: file,
+      })
+      if (!uploadResponse.ok) {
+        throw new Error("UPLOAD_FAILED")
       }
 
-      const next = [report, ...loadLabReports()]
-      persist(next)
+      await finalizeReportUpload(patientId, {
+        reportId: intent.reportId,
+        title: safeTitle,
+        blobKey: intent.blobKey,
+        mimeType: file.type,
+        uploadedAt,
+        category,
+      })
+
+      await refreshReports(patientId)
       setTitle("")
     } catch {
-      setError("Could not read this file. Try another one.")
+      setError("Upload failed. Please try again.")
     } finally {
       setIsUploading(false)
     }
@@ -129,17 +212,57 @@ export function PatientLabReportsView() {
     if (file) void processFile(file)
   }
 
-  const removeReport = (id: string) => {
+  const removeReport = async (id: string) => {
     if (!window.confirm("Delete this report? This cannot be undone.")) return
-    const next = loadLabReports().filter((r) => r.id !== id)
-    persist(next)
+    if (USE_LOCAL_REPORTS_DEV_MODE) {
+      const next = loadLabReports().filter((r) => r.id !== id)
+      saveLabReports(next)
+      setReports(next)
+      return
+    }
+    if (!patientId) return
+    setIsDeleting(true)
+    try {
+      await deleteReport(patientId, id)
+      await refreshReports(patientId)
+    } catch {
+      setError("Could not delete the report. Please try again.")
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const downloadReport = async (reportId: string) => {
+    if (USE_LOCAL_REPORTS_DEV_MODE) {
+      const report = reports.find((r) => r.id === reportId)
+      if (!report) return
+      if (report.previewDataUrl) {
+        const anchor = document.createElement("a")
+        anchor.href = report.previewDataUrl
+        anchor.download = report.fileName
+        anchor.click()
+      } else {
+        setError("This file preview is not available in local mode.")
+      }
+      return
+    }
+    if (!patientId) return
+    setIsDownloading(reportId)
+    try {
+      const { downloadUrl } = await getReportDownloadUrl(patientId, reportId)
+      window.open(downloadUrl, "_blank", "noopener,noreferrer")
+    } catch {
+      setError("Could not generate download link. Please try again.")
+    } finally {
+      setIsDownloading(null)
+    }
   }
 
   const sorted = [...reports].sort(
     (a, b) => parseISO(b.uploadedAt).getTime() - parseISO(a.uploadedAt).getTime()
   )
 
-  if (!hydrated) {
+  if (isLoading) {
     return (
       <div className="flex justify-center py-16">
         <Loader2 className="size-8 animate-spin text-muted-foreground" aria-hidden />
@@ -153,8 +276,7 @@ export function PatientLabReportsView() {
         <h2 className="h4 text-foreground">Upload a report</h2>
         <p className="body-sm text-muted-foreground">
           PDF or image files up to {formatBytes(MAX_FILE_BYTES)}. Files up to{" "}
-          {formatBytes(MAX_PREVIEW_BYTES)} can include an in-browser preview and download; larger
-          uploads are stored as metadata only until cloud storage is wired.
+          {formatBytes(MAX_FILE_BYTES)} are uploaded securely and saved to your report history.
         </p>
 
         <div className="space-y-3">
@@ -190,7 +312,9 @@ export function PatientLabReportsView() {
             }}
             onDragLeave={() => setIsDragging(false)}
             onDrop={onDrop}
-            onClick={() => inputRef.current?.click()}
+            onClick={() => {
+              inputRef.current?.click()
+            }}
             className={cn(
               "flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed px-6 py-12 transition-colors",
               isDragging
@@ -208,7 +332,9 @@ export function PatientLabReportsView() {
               <p className="font-medium text-foreground">
                 {isUploading ? "Uploading…" : "Drop a file here or click to browse"}
               </p>
-              <p className="mt-1 text-sm text-muted-foreground">PDF, PNG, JPG, WebP — max {formatBytes(MAX_FILE_BYTES)}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                PDF, PNG, JPG - max {formatBytes(MAX_FILE_BYTES)}
+              </p>
             </div>
             <Button
               type="button"
@@ -248,27 +374,13 @@ export function PatientLabReportsView() {
           <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {sorted.map((r) => {
               const isPdf = r.mimeType === "application/pdf"
-              const isImage = r.mimeType.startsWith("image/")
               const dateLabel = format(parseISO(r.uploadedAt), "MMM d, yyyy · h:mm a")
 
               return (
                 <li key={r.id}>
                   <Card className="h-full overflow-hidden shadow-sm">
                     <div className="relative aspect-[4/3] bg-muted">
-                      {r.previewDataUrl && isImage ? (
-                        <img
-                          src={r.previewDataUrl}
-                          alt=""
-                          className="size-full object-cover"
-                        />
-                      ) : r.previewDataUrl && isPdf ? (
-                        <object
-                          data={r.previewDataUrl}
-                          type="application/pdf"
-                          className="size-full"
-                          aria-label={r.title}
-                        />
-                      ) : (
+                      {(
                         <div className="flex size-full flex-col items-center justify-center gap-2 text-muted-foreground">
                           {isPdf ? (
                             <FileText className="size-14 opacity-60" aria-hidden />
@@ -292,29 +404,27 @@ export function PatientLabReportsView() {
                           {r.status}
                         </Badge>
                         <Badge variant="outline" className="font-normal">
-                          {formatBytes(r.fileSizeBytes)}
+                          {r.fileSizeBytes > 0 ? formatBytes(r.fileSizeBytes) : "Uploaded"}
                         </Badge>
                       </div>
                       <div className="flex flex-wrap gap-2 pt-1">
-                        {r.previewDataUrl ? (
-                          <Button variant="outline" size="sm" className="rounded-lg" asChild>
-                            <a href={r.previewDataUrl} download={r.fileName}>
-                              <Download className="mr-1.5 size-3.5" aria-hidden />
-                              Download
-                            </a>
-                          </Button>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">
-                            Full file is not stored in the browser for this item. Cloud storage will
-                            keep originals when the API is connected.
-                          </span>
-                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="rounded-lg"
+                          onClick={() => void downloadReport(r.id)}
+                          disabled={isDownloading === r.id}
+                        >
+                          <Download className="mr-1.5 size-3.5" aria-hidden />
+                          {isDownloading === r.id ? "Preparing..." : "Download"}
+                        </Button>
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
                           className="rounded-lg text-destructive hover:bg-destructive/10 hover:text-destructive"
-                          onClick={() => removeReport(r.id)}
+                          onClick={() => void removeReport(r.id)}
+                          disabled={isDeleting}
                         >
                           <Trash2 className="mr-1.5 size-3.5" aria-hidden />
                           Delete
