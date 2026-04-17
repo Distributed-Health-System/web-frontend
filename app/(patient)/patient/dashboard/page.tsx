@@ -41,6 +41,7 @@ const quickActions: QuickAction[] = [
   { label: "Book Appointment", href: "/patient/find-doctors", icon: CalendarDays },
   { label: "Upload Report", href: "/patient/lab-reports", icon: FlaskConical },
   { label: "Check Prescriptions", href: "/patient/prescriptions", icon: Pill },
+
 ]
 
 const vitals: VitalCard[] = [

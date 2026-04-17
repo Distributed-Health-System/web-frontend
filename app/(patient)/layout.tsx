@@ -7,16 +7,16 @@ import {
   CalendarIcon,
   FlaskConicalIcon,
   PillIcon,
-  CreditCardIcon,
+  ShieldPlusIcon,
 } from "lucide-react"
 
 const patientNavItems = [
   { title: "Dashboard", url: "/patient/dashboard", icon: <LayoutDashboardIcon /> },
+  { title: "Check Symptoms", url: "/patient/symptom-checker", icon: <ShieldPlusIcon /> },
   { title: "Find Doctors", url: "/patient/find-doctors", icon: <StethoscopeIcon /> },
   { title: "My Appointments", url: "/patient/appointments", icon: <CalendarIcon /> },
   { title: "Upload Lab Reports", url: "/patient/lab-reports", icon: <FlaskConicalIcon /> },
   { title: "My Prescriptions", url: "/patient/prescriptions", icon: <PillIcon /> },
-  { title: "My Payments", url: "/patient/payments", icon: <CreditCardIcon /> },
 ]
 
 const patientUser = {

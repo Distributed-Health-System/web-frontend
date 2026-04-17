@@ -62,7 +62,8 @@ export function useSymptomChat() {
         messages: data.conversation,
         analysis: data.analysis,
       }))
-    } catch {
+    } catch (e) {
+      console.log(e)
       setState((s) => ({
         ...s,
         isLoading: false,

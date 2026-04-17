@@ -76,13 +76,13 @@ export function SymptomChat() {
                       className={cn(
                         "text-[10px] font-medium px-1.5 py-0.5 rounded-full",
                         s.analysis.urgencyLevel === "emergency" &&
-                          "bg-destructive/10 text-destructive",
+                        "bg-destructive/10 text-destructive",
                         s.analysis.urgencyLevel === "urgent" &&
-                          "bg-orange-100 text-orange-700",
+                        "bg-orange-100 text-orange-700",
                         s.analysis.urgencyLevel === "routine" &&
-                          "bg-primary/10 text-primary",
+                        "bg-primary/10 text-primary",
                         s.analysis.urgencyLevel === "self-care" &&
-                          "bg-success/10 text-success",
+                        "bg-success/10 text-success",
                       )}
                     >
                       {s.analysis.urgencyLevel}
@@ -119,7 +119,7 @@ export function SymptomChat() {
               <div>
                 <p className="h4 mb-1">How are you feeling?</p>
                 <p className="body-base text-muted-foreground max-w-xs">
-                  Describe your symptoms and I'll help assess them and recommend the right specialist.
+                  Describe your symptoms and I&apos;ll help assess them and recommend the right specialist.
                 </p>
               </div>
             </div>
