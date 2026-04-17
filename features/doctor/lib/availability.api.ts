@@ -14,7 +14,8 @@ export interface WeeklyRule {
 
 export interface BreakRule {
   dayOfWeek: number
-  windows: TimeWindow[]
+  start: string // "HH:MM"
+  end: string   // "HH:MM"
 }
 
 export interface DateOverride {
@@ -36,75 +37,56 @@ export interface AvailabilitySchedule {
 
 export type PatchAvailabilitySchedule = Partial<AvailabilitySchedule>
 
-export interface FreeSlot {
-  start: string
-  end: string
-}
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-function doctorHeaders(userId: string) {
-  return { "x-user-id": userId, "x-user-role": "doctor" }
-}
+/** ISO datetime string e.g. "2026-04-20T03:30:00.000Z" */
+export type FreeSlot = string
 
 // ── Doctor-facing endpoints (/doctors/me/availability) ────────────────────────
+// userId is injected by the gateway from the JWT cookie — no manual header needed.
 
 /** Get the authenticated doctor's availability schedule */
-export async function getMyAvailability(userId: string): Promise<AvailabilitySchedule> {
+export async function getMyAvailability(): Promise<AvailabilitySchedule> {
   const { data } = await apiClient.get<{ schedule: AvailabilitySchedule }>(
     "/doctors/me/availability",
-    { headers: doctorHeaders(userId) },
   )
   return data.schedule
 }
 
 /** Full replace of the doctor's availability schedule */
 export async function putMyAvailability(
-  userId: string,
   payload: AvailabilitySchedule,
 ): Promise<AvailabilitySchedule> {
   const { data } = await apiClient.put<AvailabilitySchedule>(
     "/doctors/me/availability",
     payload,
-    { headers: doctorHeaders(userId) },
   )
   return data
 }
 
 /** Partial update of the doctor's availability schedule */
 export async function patchMyAvailability(
-  userId: string,
   payload: PatchAvailabilitySchedule,
 ): Promise<AvailabilitySchedule> {
   const { data } = await apiClient.patch<AvailabilitySchedule>(
     "/doctors/me/availability",
     payload,
-    { headers: doctorHeaders(userId) },
   )
   return data
 }
 
 /** Add a date override (day off or custom windows for a specific date) */
 export async function addAvailabilityOverride(
-  userId: string,
   override: DateOverride,
 ): Promise<AvailabilitySchedule> {
   const { data } = await apiClient.post<AvailabilitySchedule>(
     "/doctors/me/availability/overrides",
     override,
-    { headers: doctorHeaders(userId) },
   )
   return data
 }
 
 /** Remove a date override by date string ("YYYY-MM-DD") */
-export async function removeAvailabilityOverride(
-  userId: string,
-  date: string,
-): Promise<void> {
-  await apiClient.delete(`/doctors/me/availability/overrides/${date}`, {
-    headers: doctorHeaders(userId),
-  })
+export async function removeAvailabilityOverride(date: string): Promise<void> {
+  await apiClient.delete(`/doctors/me/availability/overrides/${date}`)
 }
 
 // ── Integration endpoints (/doctors/integration/availability) ─────────────────
@@ -116,11 +98,11 @@ export async function getFreeSlotsForDoctor(
   from: string,
   to: string,
 ): Promise<FreeSlot[]> {
-  const { data } = await apiClient.get<FreeSlot[]>(
+  const { data } = await apiClient.get<{ slots: FreeSlot[] }>(
     `/doctors/integration/availability/${doctorUserId}/free-slots`,
     { params: { from, to } },
   )
-  return data
+  return data.slots ?? []
 }
 
 /** Validate whether a specific slot is available for a doctor */
