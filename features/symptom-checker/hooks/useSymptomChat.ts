@@ -4,6 +4,7 @@ import { useState, useCallback } from "react"
 import {
   sendMessage,
   getPatientSessions,
+  getSession,
   type ChatMessage,
   type ChatResponse,
   type SymptomAnalysis,
@@ -62,7 +63,8 @@ export function useSymptomChat() {
         messages: data.conversation,
         analysis: data.analysis,
       }))
-    } catch {
+    } catch (e) {
+      console.log(e)
       setState((s) => ({
         ...s,
         isLoading: false,
@@ -100,14 +102,20 @@ export function useSymptomChat() {
     }
   }, [])
 
-  const loadSession = useCallback(async (sessionId: string, conversation: ChatMessage[], analysis?: SymptomAnalysis) => {
-    setState((s) => ({
-      ...s,
-      sessionId,
-      messages: conversation,
-      analysis,
-      error: null,
-    }))
+  const loadSession = useCallback(async (id: string) => {
+    setState((s) => ({ ...s, isLoading: true, error: null }))
+    try {
+      const data = await getSession(id, DEMO_PATIENT_ID)
+      setState((s) => ({
+        ...s,
+        sessionId: id,
+        messages: data.conversation,
+        analysis: data.analysis,
+        isLoading: false,
+      }))
+    } catch {
+      setState((s) => ({ ...s, isLoading: false, error: "Failed to load session." }))
+    }
   }, [])
 
   return {

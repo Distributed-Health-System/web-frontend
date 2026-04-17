@@ -1,4 +1,6 @@
-const AI_SERVICE_URL = process.env.NEXT_PUBLIC_AI_SERVICE_URL ?? "http://localhost:3008"
+import { apiClient } from "@/lib/api-base"
+
+const symptomCheckerClient = apiClient
 
 export interface PossibleCondition {
   name: string
@@ -26,9 +28,8 @@ export interface ChatResponse {
   analysis?: SymptomAnalysis
 }
 
-function headers(patientId: string) {
+function userHeaders(patientId: string) {
   return {
-    "Content-Type": "application/json",
     "x-user-id": patientId,
     "x-user-role": "patient",
   }
@@ -39,30 +40,29 @@ export async function sendMessage(
   message: string,
   patientId: string,
 ): Promise<ChatResponse> {
-  const res = await fetch(`${AI_SERVICE_URL}/symptom-checker/chat`, {
-    method: "POST",
-    headers: headers(patientId),
-    body: JSON.stringify({ sessionId, message }),
-  })
-  if (!res.ok) throw new Error("Failed to send message")
-  return res.json()
+  const { data } = await symptomCheckerClient.post<ChatResponse>(
+    "/symptom-checker/chat",
+    { sessionId, message },
+    { headers: userHeaders(patientId) },
+  )
+  return data
 }
 
 export async function getPatientSessions(patientId: string): Promise<ChatResponse[]> {
-  const res = await fetch(`${AI_SERVICE_URL}/symptom-checker/sessions`, {
-    headers: headers(patientId),
-  })
-  if (!res.ok) throw new Error("Failed to fetch sessions")
-  return res.json()
+  const { data } = await symptomCheckerClient.get<ChatResponse[]>(
+    "/symptom-checker/sessions",
+    { headers: userHeaders(patientId) },
+  )
+  return data
 }
 
 export async function getSession(
   sessionId: string,
   patientId: string,
 ): Promise<ChatResponse> {
-  const res = await fetch(`${AI_SERVICE_URL}/symptom-checker/sessions/${sessionId}`, {
-    headers: headers(patientId),
-  })
-  if (!res.ok) throw new Error("Failed to fetch session")
-  return res.json()
+  const { data } = await symptomCheckerClient.get<ChatResponse>(
+    `/symptom-checker/sessions/${sessionId}`,
+    { headers: userHeaders(patientId) },
+  )
+  return data
 }
