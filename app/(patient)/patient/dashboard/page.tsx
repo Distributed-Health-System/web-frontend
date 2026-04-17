@@ -118,12 +118,7 @@ export default function Page() {
         <div className="pointer-events-none absolute right-[-42px] top-[-20px] hidden size-56 rounded-[40px] border-[20px] border-[#66abd4]/40 md:block" />
       </Card>
 
-      <div className="flex justify-end">
-        <Button className="rounded-2xl bg-green-800 px-6 py-5 text-sm hover:bg-green-900">
-          <ShieldPlus className="size-4" />
-          AI Symptom Checker
-        </Button>
-      </div>
+
 
       <div className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
         <section className="space-y-4">

@@ -1,19 +1,18 @@
 import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { SymptomChat } from "@/features/symptom-checker/components/SymptomChat"
+import { SymptomCheckerPanel } from "@/features/symptom-checker/components/SymptomCheckerPanel"
 import {
   LayoutDashboardIcon,
-  SparklesIcon,
   StethoscopeIcon,
   CalendarIcon,
   FlaskConicalIcon,
   PillIcon,
-  ShieldPlusIcon,
 } from "lucide-react"
 
 const patientNavItems = [
   { title: "Dashboard", url: "/patient/dashboard", icon: <LayoutDashboardIcon /> },
-  { title: "Check Symptoms", url: "/patient/symptom-checker", icon: <ShieldPlusIcon /> },
   { title: "Find Doctors", url: "/patient/find-doctors", icon: <StethoscopeIcon /> },
   { title: "My Appointments", url: "/patient/appointments", icon: <CalendarIcon /> },
   { title: "Upload Lab Reports", url: "/patient/lab-reports", icon: <FlaskConicalIcon /> },
@@ -43,8 +42,10 @@ export default function PatientLayout({
       <AppSidebar variant="inset" navItems={patientNavItems} user={patientUser} brandName="Distributed Health" />
       <SidebarInset>
         <SiteHeader />
+        {/* <SymptomChat /> */}
         {children}
       </SidebarInset>
+      <SymptomCheckerPanel />
     </SidebarProvider>
   )
 }

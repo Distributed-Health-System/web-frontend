@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useState } from "react"
 import { ArrowRight, Brain, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck } from "lucide-react"
+import { useAuth } from "@/features/authentication/hooks/useAuth"
 
 import { DistributedHealthLogo } from "@/components/brand/distributed-health-logo"
 import { AuthFooter } from "@/components/layout/auth-footer"
@@ -43,9 +44,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [rememberDevice, setRememberDevice] = useState(false)
   const [errors, setErrors] = useState<LoginErrors>({})
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submitError, setSubmitError] = useState<string | null>(null)
-  const [submitSuccess, setSubmitSuccess] = useState<string | null>(null)
+  const { isSubmitting, submitError, login } = useAuth()
 
   const validate = (): LoginErrors => {
     const nextErrors: LoginErrors = {}
@@ -58,8 +57,6 @@ export default function LoginPage() {
 
     if (!password) {
       nextErrors.password = "Password is required."
-    } else if (password.length < 8) {
-      nextErrors.password = "Password must be at least 8 characters."
     }
 
     return nextErrors
@@ -69,21 +66,10 @@ export default function LoginPage() {
     event.preventDefault()
     const nextErrors = validate()
     setErrors(nextErrors)
-    setSubmitError(null)
-    setSubmitSuccess(null)
 
-    if (Object.keys(nextErrors).length > 0) {
-      return
-    }
+    if (Object.keys(nextErrors).length > 0) return
 
-    try {
-      setIsSubmitting(true)
-      setSubmitSuccess(
-        "Sign-in will connect to your auth service. Validated locally for now."
-      )
-    } finally {
-      setIsSubmitting(false)
-    }
+    await login({ email, password })
   }
 
   return (
@@ -281,7 +267,6 @@ export default function LoginPage() {
             </Button>
 
             {submitError ? <p className="helper-text text-destructive">{submitError}</p> : null}
-            {submitSuccess ? <p className="helper-text text-success">{submitSuccess}</p> : null}
           </form>
 
           <p className="mt-8 text-center body-sm text-muted-foreground">
