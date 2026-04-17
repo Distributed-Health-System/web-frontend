@@ -3,12 +3,13 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardFooter, CardAction } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { CalendarIcon, UsersIcon, ClipboardPlusIcon, WalletIcon, TrendingUpIcon } from "lucide-react"
-import type { DoctorAppointment, DoctorPatient, Prescription } from "../../types"
+import type { DoctorAppointment, DoctorPatient, DoctorPrescription } from "../../types"
+import { activePrescriptionCount } from "../../lib/prescription-map"
 
 interface DoctorStatsCardsProps {
   appointments: DoctorAppointment[]
   patients: DoctorPatient[]
-  prescriptions: Prescription[]
+  prescriptions: DoctorPrescription[]
   earningsThisMonth?: number
 }
 
@@ -39,8 +40,8 @@ export function DoctorStatsCards({
       badge: "Active",
     },
     {
-      label: "Prescriptions Issued",
-      value: prescriptions.length,
+      label: "Active prescriptions",
+      value: activePrescriptionCount(prescriptions),
       icon: <ClipboardPlusIcon className="size-4 text-muted-foreground" />,
       trend: "This month",
       badge: "Up to date",
