@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import axios from "axios"
 import { loginRequest, logoutRequest, type LoginPayload } from "../lib/authentication.api"
-import { scheduleTokenRefresh, cancelTokenRefresh } from "@/lib/api-base"
+import { clearAuthTokens, getRefreshToken, setAuthTokens } from "@/lib/api-base"
 
 interface UseAuthReturn {
   isSubmitting: boolean
@@ -23,9 +23,8 @@ export function useAuth(): UseAuthReturn {
     setSubmitError(null)
 
     try {
-      const { expiresIn } = await loginRequest(payload)
-      scheduleTokenRefresh(expiresIn)
-      // TODO: decode role from accessToken cookie (via /auth/me endpoint) and route accordingly
+      const { accessToken, refreshToken } = await loginRequest(payload)
+      setAuthTokens(accessToken, refreshToken)
       router.push("/patient/dashboard")
     } catch (err) {
       const message = axios.isAxiosError(err)
@@ -38,10 +37,13 @@ export function useAuth(): UseAuthReturn {
   }
 
   const logout = async () => {
-    cancelTokenRefresh()
-    await logoutRequest().catch(() => {
-      // best-effort — cookies cleared server-side
-    })
+    const refreshToken = getRefreshToken()
+    if (refreshToken) {
+      await logoutRequest(refreshToken).catch(() => {
+        // best-effort — invalidate client session regardless
+      })
+    }
+    clearAuthTokens()
     router.push("/login")
   }
 

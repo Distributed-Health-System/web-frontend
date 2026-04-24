@@ -22,7 +22,7 @@ export interface PatientLabReport {
   title: string
   /** ISO timestamp */
   uploadedAt: string
-  category: "lab" | "scan" | "other"
+  category: "lab" | "scan" | "discharge" | "other"
   status: "pending" | "reviewed"
   /** Original file name from upload or placeholder for seeded rows */
   fileName: string
